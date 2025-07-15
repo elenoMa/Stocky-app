@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { fetchMovements } from '../services/api'
 import DashboardLayout from '../components/DashboardLayout '
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
@@ -9,98 +10,25 @@ import ViewToggle from '../components/ViewToggle'
 import type { Movement, QuickMovementData } from '../types/movement'
 import { calculateMovementStats, filterMovements } from '../utils/movementUtils'
 
-const mockMovements: Movement[] = [
-    {
-        id: '1',
-        productName: 'Yerba',
-        category: 'Bebidas',
-        type: 'entrada',
-        quantity: 50,
-        previousStock: 20,
-        newStock: 70,
-        reason: 'Compra proveedor',
-        date: '2024-01-15T10:30:00',
-        user: 'Mariano',
-        cost: 275.00,
-        notes: 'Lote #2024-001'
-    },
-    {
-        id: '2',
-        productName: 'Café',
-        category: 'Bebidas',
-        type: 'salida',
-        quantity: 5,
-        previousStock: 15,
-        newStock: 10,
-        reason: 'Venta',
-        date: '2024-01-15T14:20:00',
-        user: 'Ana',
-        notes: 'Cliente: Restaurante Central'
-    },
-    {
-        id: '3',
-        productName: 'Fideos',
-        category: 'Alimentos',
-        type: 'entrada',
-        quantity: 100,
-        previousStock: 30,
-        newStock: 130,
-        reason: 'Compra proveedor',
-        date: '2024-01-14T09:15:00',
-        user: 'Mariano',
-        cost: 200.00,
-        notes: 'Promoción especial'
-    },
-    {
-        id: '4',
-        productName: 'Detergente',
-        category: 'Limpieza',
-        type: 'salida',
-        quantity: 8,
-        previousStock: 25,
-        newStock: 17,
-        reason: 'Uso interno',
-        date: '2024-01-14T16:45:00',
-        user: 'Carlos',
-        notes: 'Limpieza oficina'
-    },
-    {
-        id: '5',
-        productName: 'Yerba',
-        category: 'Bebidas',
-        type: 'salida',
-        quantity: 10,
-        previousStock: 70,
-        newStock: 60,
-        reason: 'Venta',
-        date: '2024-01-13T11:30:00',
-        user: 'Ana',
-        notes: 'Cliente: Cafetería Express'
-    },
-    {
-        id: '6',
-        productName: 'Papel Higiénico',
-        category: 'Limpieza',
-        type: 'entrada',
-        quantity: 200,
-        previousStock: 50,
-        newStock: 250,
-        reason: 'Compra proveedor',
-        date: '2024-01-13T08:00:00',
-        user: 'Mariano',
-        cost: 400.00,
-        notes: 'Stock de seguridad'
-    }
-]
-
 const Movements = () => {
-    const [movements] = useState<Movement[]>(mockMovements)
+    const [movements, setMovements] = useState<Movement[]>([])
+    const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterType, setFilterType] = useState<'todos' | 'entrada' | 'salida'>('todos')
     const [filterCategory, setFilterCategory] = useState('todos')
     const [filterDate, setFilterDate] = useState('')
     const [showQuickMovement, setShowQuickMovement] = useState(false)
     const [viewMode, setViewMode] = useState<'recent' | 'all'>('recent')
+
+    useEffect(() => {
+        fetchMovements()
+            .then(data => setMovements(data.movements || data))
+            .catch(err => {
+                console.error(err)
+                setMovements([])
+            })
+            .finally(() => setLoading(false))
+    }, [])
 
     // Obtener categorías únicas
     const categories = useMemo(() => {
@@ -117,6 +45,10 @@ const Movements = () => {
     const stats = useMemo(() => {
         return calculateMovementStats(movements)
     }, [movements])
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64">Cargando movimientos...</div>
+    }
 
     const handleQuickMovementSubmit = (data: QuickMovementData) => {
         // Aquí se procesaría la creación del movimiento

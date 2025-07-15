@@ -33,6 +33,9 @@ export const getMovements = async (req, res) => {
 
     const total = await Movement.countDocuments(filters);
 
+    // Log de los movimientos para depuración
+    console.log('Movements encontrados:', JSON.stringify(movements, null, 2));
+
     res.json({
       movements,
       pagination: {
@@ -43,6 +46,7 @@ export const getMovements = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error en getMovements:', error);
     res.status(500).json({ message: 'Error al obtener movimientos', error: error.message });
   }
 };

@@ -1,10 +1,17 @@
+console.log('⏩ Importando mongoose...');
 import mongoose from 'mongoose';
+console.log('⏩ Importando dotenv...');
 import dotenv from 'dotenv';
+console.log('⏩ Importando Product...');
 import Product from '../models/Product.js';
+console.log('⏩ Importando Category...');
 import Category from '../models/Category.js';
+console.log('⏩ Importando Movement...');
 import Movement from '../models/Movement.js';
 
 dotenv.config();
+
+console.log('🔎 process.env.MONGO_URI:', process.env.MONGO_URI);
 
 const sampleCategories = [
   { name: 'Electrónicos', description: 'Productos electrónicos y tecnología', color: '#3B82F6' },
@@ -88,24 +95,39 @@ const seedData = async () => {
     console.log('🌱 Iniciando población de datos...');
 
     // Conectar a MongoDB
+    console.log('🔗 Intentando conectar a MongoDB...');
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('🔗 Conectado a MongoDB');
+    console.log('✅ Conectado a MongoDB');
 
     // Limpiar datos existentes
+    console.log('🧹 Eliminando categorías existentes...');
     await Category.deleteMany({});
+    console.log('🧹 Eliminando productos existentes...');
     await Product.deleteMany({});
+    console.log('🧹 Eliminando movimientos existentes...');
     await Movement.deleteMany({});
     console.log('🧹 Datos existentes eliminados');
 
-    // Crear categorías
+    // Crear categorías y obtener el mapping nombre -> _id
+    console.log('📦 Insertando categorías...');
     const createdCategories = await Category.insertMany(sampleCategories);
+    const categoryMap = {};
+    createdCategories.forEach(cat => {
+      categoryMap[cat.name] = cat._id;
+    });
     console.log(`✅ ${createdCategories.length} categorías creadas`);
 
-    // Crear productos
-    const createdProducts = await Product.insertMany(sampleProducts);
+    // Crear productos usando el _id de la categoría
+    console.log('📦 Insertando productos...');
+    const productsToInsert = sampleProducts.map(prod => ({
+      ...prod,
+      category: categoryMap[prod.category]
+    }));
+    const createdProducts = await Product.insertMany(productsToInsert);
     console.log(`✅ ${createdProducts.length} productos creados`);
 
     // Crear algunos movimientos de ejemplo
+    console.log('📦 Insertando movimientos...');
     const sampleMovements = [
       {
         productId: createdProducts[0]._id,
@@ -155,6 +177,9 @@ const seedData = async () => {
 
   } catch (error) {
     console.error('❌ Error durante la población de datos:', error);
+    if (error && error.stack) {
+      console.error(error.stack);
+    }
   } finally {
     await mongoose.connection.close();
     console.log('👋 Conexión cerrada');
@@ -162,9 +187,6 @@ const seedData = async () => {
   }
 };
 
-// Ejecutar si se llama directamente
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedData();
-}
+seedData();
 
 export default seedData; 

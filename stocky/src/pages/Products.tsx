@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { fetchProducts } from '../services/api'
 import DashboardLayout from '../components/DashboardLayout '
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
@@ -9,95 +10,9 @@ import ViewToggle from '../components/ViewToggle'
 import type { Product } from '../types/product'
 import { calculateProductStats, filterAndSortProducts } from '../utils/productUtils'
 
-const mockProducts: Product[] = [
-    { 
-        id: '1', 
-        name: 'Yerba Mate Premium', 
-        category: 'Bebidas', 
-        stock: 20, 
-        price: 5.5, 
-        minStock: 10,
-        maxStock: 100,
-        supplier: 'Proveedor A',
-        sku: 'YER-001',
-        description: 'Yerba mate de alta calidad para mate tradicional',
-        lastUpdated: '2024-01-15T10:30:00',
-        status: 'active'
-    },
-    { 
-        id: '2', 
-        name: 'Café Colombiano', 
-        category: 'Bebidas', 
-        stock: 8, 
-        price: 7.0, 
-        minStock: 15,
-        maxStock: 50,
-        supplier: 'Proveedor B',
-        sku: 'CAF-002',
-        description: 'Café 100% colombiano molido',
-        lastUpdated: '2024-01-14T14:20:00',
-        status: 'low-stock'
-    },
-    { 
-        id: '3', 
-        name: 'Fideos Spaghetti', 
-        category: 'Alimentos', 
-        stock: 45, 
-        price: 2.0, 
-        minStock: 20,
-        maxStock: 200,
-        supplier: 'Proveedor C',
-        sku: 'FID-003',
-        description: 'Fideos spaghetti de trigo duro',
-        lastUpdated: '2024-01-13T09:15:00',
-        status: 'active'
-    },
-    { 
-        id: '4', 
-        name: 'Detergente Líquido', 
-        category: 'Limpieza', 
-        price: 3.5, 
-        stock: 12, 
-        minStock: 25,
-        maxStock: 100,
-        supplier: 'Proveedor D',
-        sku: 'DET-004',
-        description: 'Detergente líquido para ropa',
-        lastUpdated: '2024-01-12T16:45:00',
-        status: 'low-stock'
-    },
-    { 
-        id: '5', 
-        name: 'Papel Higiénico', 
-        category: 'Limpieza', 
-        stock: 80, 
-        price: 1.8, 
-        minStock: 30,
-        maxStock: 150,
-        supplier: 'Proveedor E',
-        sku: 'PAP-005',
-        description: 'Papel higiénico suave 3 capas',
-        lastUpdated: '2024-01-11T11:30:00',
-        status: 'active'
-    },
-    { 
-        id: '6', 
-        name: 'Aceite de Oliva', 
-        category: 'Alimentos', 
-        stock: 15, 
-        price: 8.5, 
-        minStock: 20,
-        maxStock: 80,
-        supplier: 'Proveedor F',
-        sku: 'ACE-006',
-        description: 'Aceite de oliva extra virgen',
-        lastUpdated: '2024-01-10T08:00:00',
-        status: 'low-stock'
-    }
-]
-
 const Products = () => {
-    const [products, setProducts] = useState<Product[]>(mockProducts)
+    const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState('todos')
     const [filterStatus, setFilterStatus] = useState<'todos' | 'active' | 'inactive' | 'low-stock'>('todos')
@@ -106,6 +21,19 @@ const Products = () => {
     const [showModal, setShowModal] = useState(false)
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+
+    useEffect(() => {
+        fetchProducts()
+            .then(data => {
+                // Ajusta esto según la estructura real de la respuesta de la API
+                setProducts(data.products || data)
+            })
+            .catch(err => {
+                console.error(err)
+                setProducts([])
+            })
+            .finally(() => setLoading(false))
+    }, [])
 
     // Obtener categorías únicas
     const categories = useMemo(() => {
@@ -153,6 +81,10 @@ const Products = () => {
             setProducts([...products, newProduct])
         }
         setEditingProduct(null)
+    }
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64">Cargando productos...</div>
     }
 
     return (

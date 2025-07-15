@@ -61,7 +61,7 @@ const productSchema = new mongoose.Schema({
 
 // Virtual para lastUpdated
 productSchema.virtual('lastUpdated').get(function() {
-  return this.updatedAt.toISOString();
+  return (this.updatedAt instanceof Date) ? this.updatedAt.toISOString() : null;
 });
 
 // Middleware para actualizar el status basado en el stock
