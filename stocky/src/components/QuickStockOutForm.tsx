@@ -6,16 +6,10 @@ interface FromData {
 }
 
 const QuickStockOutForm = () => {
-    const { register, handleSubmit, formState: { errors } } = useForm<FromData>();
+    const { register, handleSubmit } = useForm<FromData>();
     const onSubmit = (data: FromData) => {
         console.log(data);
     }
-    return (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-bold mb-4">Salida de Stock Rápida</h2>
-        </div>
-    )
-
     return (
         <div className="bg-white p-4 rounded-lg shadow-md mb-6">
             <h2 className="text-xl font-bold mb-4">Descontar Stock Rápido</h2>
