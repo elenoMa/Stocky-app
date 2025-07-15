@@ -1,0 +1,156 @@
+import { useState } from 'react'
+import type { ReactNode } from 'react'
+import { Link, NavLink, useLocation } from "react-router-dom"
+
+interface DashboardLayoutProps {
+    children: ReactNode;
+}
+
+const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+    const [sidebarOpen, setSidebarOpen] = useState(false)
+    const location = useLocation()
+
+    const navigation = [
+        { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
+        { name: 'Productos', href: '/products', icon: '📦' },
+        { name: 'Movimientos', href: '/movements', icon: '📊' },
+        { name: 'Categorías', href: '/categories', icon: '📁' },
+    ]
+
+    const isActive = (path: string) => {
+        return location.pathname === path
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Sidebar para móvil */}
+            <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
+                <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl transition-colors duration-300">
+                    <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200">
+                        <div className="flex items-center">
+                            <span className="text-2xl">📦</span>
+                            <span className="ml-3 text-xl font-bold text-gray-900">Stocky</span>
+                        </div>
+                        <button
+                            onClick={() => setSidebarOpen(false)}
+                            className="text-gray-400 hover:text-gray-600"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <nav className="flex-1 px-4 py-6 space-y-2">
+                        {navigation.map((item) => (
+                            <NavLink
+                                key={item.name}
+                                to={item.href}
+                                onClick={() => setSidebarOpen(false)}
+                                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                    isActive(item.href)
+                                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <span className="mr-3 text-lg">{item.icon}</span>
+                                {item.name}
+                            </NavLink>
+                        ))}
+                    </nav>
+                    <div className="border-t border-gray-200 p-4">
+                        <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-700">ME</span>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-700">Mariano Eleno</p>
+                                <p className="text-xs text-gray-500">Administrador</p>
+                            </div>
+                        </div>
+                        <button className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            ❌ Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Sidebar para desktop */}
+            <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+                <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm transition-colors duration-300">
+                    {/* Logo */}
+                    <div className="flex h-16 items-center px-6 border-b border-gray-200">
+                        <div className="flex items-center">
+                            <span className="text-2xl">📦</span>
+                            <span className="ml-3 text-xl font-bold text-gray-900">Stocky</span>
+                        </div>
+                    </div>
+
+                    {/* Navegación */}
+                    <nav className="flex-1 px-4 py-6 space-y-2">
+                        {navigation.map((item) => (
+                            <NavLink
+                                key={item.name}
+                                to={item.href}
+                                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                    isActive(item.href)
+                                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <span className="mr-3 text-lg">{item.icon}</span>
+                                {item.name}
+                            </NavLink>
+                        ))}
+                    </nav>
+
+                    {/* Usuario */}
+                    <div className="border-t border-gray-200 p-4">
+                        <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-700">ME</span>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-700">Mariano Eleno</p>
+                                <p className="text-xs text-gray-500">Administrador</p>
+                            </div>
+                        </div>
+                        <button className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            ❌ Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Contenido principal */}
+            <div className="lg:pl-64">
+                {/* Header móvil */}
+                <div className="sticky top-0 z-40 flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm lg:hidden transition-colors duration-300">
+                    <button
+                        type="button"
+                        className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+                        onClick={() => setSidebarOpen(true)}
+                    >
+                        <span className="sr-only">Abrir sidebar</span>
+                        ☰
+                    </button>
+                    <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">
+                        Stocky
+                    </div>
+                    <div className="flex items-center gap-x-4">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-700">ME</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Contenido */}
+                <main className="py-6">
+                    <div className="px-8">
+                        {children}
+                    </div>
+                </main>
+            </div>
+        </div>
+    )
+}
+
+export default DashboardLayout
