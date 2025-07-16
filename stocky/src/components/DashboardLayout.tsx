@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
+import boxyLogo from '../assets/boxy.svg'
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -48,17 +49,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
                 <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl transition-colors duration-300">
-                    <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200">
-                        <div className="flex items-center">
-                            <span className="text-2xl">📦</span>
-                            <span className="ml-3 text-xl font-bold text-gray-900">Stocky</span>
-                        </div>
-                        <button
-                            onClick={() => setSidebarOpen(false)}
-                            className="text-gray-400 hover:text-gray-600"
-                        >
-                            ✕
-                        </button>
+                    <div className="flex flex-col items-center py-8 border-b border-gray-200">
+                        <img src={boxyLogo} alt="Stocky logo" className="h-20 w-20 mb-2" />
+                        <span className="text-3xl font-bold text-gray-900">Stocky</span>
                     </div>
                     <nav className="flex-1 px-4 py-6 space-y-2">
                         {navigation.map((item) => (
@@ -111,15 +104,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {/* Sidebar para desktop */}
             <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
                 <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm transition-colors duration-300">
-                    {/* Logo */}
-                    <div className="flex h-16 items-center px-6 border-b border-gray-200">
-                        <div className="flex items-center">
-                            <span className="text-2xl">📦</span>
-                            <span className="ml-3 text-xl font-bold text-gray-900">Stocky</span>
-                        </div>
+                    <div className="flex flex-col items-center py-8 border-b border-gray-200">
+                        <img src={boxyLogo} alt="Stocky logo" className="h-20 w-20 mb-2" />
+                        <span className="text-3xl font-bold text-gray-900">Stocky</span>
                     </div>
-
-                    {/* Navegación */}
                     <nav className="flex-1 px-4 py-6 space-y-2">
                         {navigation.map((item) => (
                             <NavLink
@@ -149,8 +137,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             </NavLink>
                         )}
                     </nav>
-
-                    {/* Usuario */}
                     <div className="border-t border-gray-200 p-4">
                         <div className="flex items-center">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">

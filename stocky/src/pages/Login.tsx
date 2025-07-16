@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import boxyGray200Logo from '../assets/boxy-gray200.svg'
 
 interface LoginForm {
     username: string
@@ -97,8 +98,8 @@ const Login = () => {
             <div className="max-w-md w-full space-y-8">
                 {/* Logo y título */}
                 <div className="text-center">
-                    <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-                        <span className="text-white text-2xl font-bold">📦</span>
+                    <div className="mx-auto h-32 w-32 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                        <img src={boxyGray200Logo} alt="Stocky logo" className="h-24 w-24 mx-auto" />
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
                         Bienvenido a Stocky
