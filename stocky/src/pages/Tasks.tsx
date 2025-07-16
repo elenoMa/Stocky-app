@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { fetchTasks, createTask, updateTask, deleteTask } from '../services/api';
 import type { Task } from '../services/api';
-import DashboardLayout from '../components/DashboardLayout';
+import PageTransition from '../components/PageTransition';
+import Loader from '../components/Loader';
 
 const PRIORITIES = [
   { value: 'alta', label: 'Alta' },
@@ -88,13 +89,13 @@ const Tasks = () => {
     }
   };
 
+  if (loading) {
+    return <PageTransition variant="slideLeft"><Loader message="Cargando tareas..." /></PageTransition>;
+  }
+
   return (
-    <DashboardLayout>
+    <PageTransition variant="slideLeft">
       <div className="max-w-2xl mx-auto py-8 px-2">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-1">📋 Mis Tareas</h1>
-          <p className="text-gray-600">Gestiona tus tareas pendientes y mantente organizado.</p>
-        </div>
         <div className="bg-white rounded-xl shadow-lg border p-6">
           <form onSubmit={handleShowModal} className="flex gap-2 mb-6">
             <input
@@ -110,7 +111,6 @@ const Tasks = () => {
             </button>
           </form>
           {error && <div className="bg-red-100 text-red-700 p-2 rounded mb-4 text-center">{error}</div>}
-          {loading && <div className="text-center text-blue-600">Cargando...</div>}
           <ul className="space-y-3">
             {tasks.map(task => (
               <li key={task._id} className="flex items-center bg-gray-50 rounded-lg shadow-sm p-4 border border-gray-100">
@@ -182,7 +182,7 @@ const Tasks = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </PageTransition>
   );
 };
 

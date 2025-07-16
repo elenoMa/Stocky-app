@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import DashboardLayout from "../components/DashboardLayout";
 import SearchBar from "../components/SearchBar";
 import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier } from "../services/api";
 import type { Supplier } from "../types/supplier";
 import SupplierFormModal from "../components/SupplierFormModal";
+import PageTransition from '../components/PageTransition';
+import Loader from '../components/Loader';
 
 function getUser() {
   const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -116,19 +117,27 @@ const Suppliers: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return <PageTransition variant="slideLeft"><Loader message="Cargando proveedores..." /></PageTransition>;
+  }
+
   return (
-    <DashboardLayout>
+    <PageTransition variant="slideLeft">
       <div className="p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-3xl">🏢</span>
-              Proveedores
-            </h1>
-            <p className="text-gray-600 mt-1">Consulta y gestiona los proveedores del sistema</p>
+          {/* KPI de proveedores */}
+          <div className="mb-0 flex gap-4 order-2 md:order-1">
+            <div className="bg-white rounded-lg shadow border p-4 flex items-center gap-3">
+              <span className="text-2xl">🏢</span>
+              <div>
+                <div className="text-lg font-bold text-gray-800">{activeSuppliers} / {totalSuppliers}</div>
+                <div className="text-xs text-gray-500">Proveedores activos / total</div>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-3 items-center mt-4 md:mt-0 w-full md:w-auto">
-            <div className="flex-1 min-w-[180px]">
+          {/* Buscador y botón a la derecha */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch justify-end w-full md:w-auto order-1 md:order-2">
+            <div className="min-w-[180px]">
               <SearchBar
                 placeholder="Buscar proveedor, email o teléfono..."
                 value={search}
@@ -147,20 +156,8 @@ const Suppliers: React.FC = () => {
             )}
           </div>
         </div>
-        {/* KPI de proveedores */}
-        <div className="mb-4 flex gap-4">
-          <div className="bg-white rounded-lg shadow border p-4 flex items-center gap-3">
-            <span className="text-2xl">🏢</span>
-            <div>
-              <div className="text-lg font-bold text-gray-800">{activeSuppliers} / {totalSuppliers}</div>
-              <div className="text-xs text-gray-500">Proveedores activos / total</div>
-            </div>
-          </div>
-        </div>
         <div className="bg-white rounded shadow p-4">
-          {loading ? (
-            <div className="flex items-center gap-2 text-gray-500"><span className="animate-spin">⏳</span> Cargando proveedores...</div>
-          ) : error ? (
+          {error ? (
             <div className="text-red-500 text-center py-8">
               <p>❌ {error}</p>
             </div>
@@ -267,7 +264,7 @@ const Suppliers: React.FC = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </PageTransition>
   );
 };
 

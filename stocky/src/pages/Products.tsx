@@ -9,6 +9,8 @@ import ProductsTable from '../components/ProductsTable'
 import ViewToggle from '../components/ViewToggle'
 import type { Product, ProductFormData } from '../types/product'
 import { calculateProductStats, filterAndSortProducts } from '../utils/productUtils'
+import PageTransition from '../components/PageTransition'
+import Loader from '../components/Loader'
 
 const Products = () => {
     const [products, setProducts] = useState<Product[]>([])
@@ -131,21 +133,17 @@ const Products = () => {
     }
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Cargando productos...</div>
+        return <PageTransition variant="slideLeft"><Loader message="Cargando productos..." /></PageTransition>
     }
     if (error) {
         return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
     }
 
     return (
-        <DashboardLayout>
+        <PageTransition variant="slideLeft">
             <div>
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800">📦 Productos</h1>
-                        <p className="text-gray-600 mt-1">Gestiona tu catálogo de productos</p>
-                    </div>
                     <div className="flex gap-3">
                         <ViewToggle
                             currentView={viewMode}
@@ -287,12 +285,22 @@ const Products = () => {
                         setShowModal(false)
                         setEditingProduct(null)
                     }}
-                    product={editingProduct}
+                    product={
+                        editingProduct
+                            ? {
+                                ...editingProduct,
+                                supplier:
+                                    typeof editingProduct.supplier === "object"
+                                        ? editingProduct.supplier?.name || ""
+                                        : editingProduct.supplier || ""
+                            }
+                            : null
+                    }
                     onSubmit={handleSubmitProduct}
                     suppliers={suppliers}
                 />
             </div>
-        </DashboardLayout>
+        </PageTransition>
     )
 }
 

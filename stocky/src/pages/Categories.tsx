@@ -5,6 +5,8 @@ import SearchBar from '../components/SearchBar'
 import EmptyState from '../components/EmptyState'
 import CategoryFormModal from '../components/CategoryFormModal'
 import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../services/api'
+import PageTransition from '../components/PageTransition'
+import Loader from '../components/Loader'
 
 interface Category {
     _id: string
@@ -95,27 +97,24 @@ const Categories = () => {
     }
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Cargando categorías...</div>
+        return <PageTransition variant="slideLeft"><Loader message="Cargando categorías..." /></PageTransition>;
     }
     if (error) {
         return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
     }
 
     return (
-        <DashboardLayout>
+        <PageTransition variant="slideLeft">
             <div>
                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800">📂 Categorías</h1>
-                        <p className="text-gray-600 mt-1">Gestiona las categorías de productos de tu inventario</p>
-                    </div>
+
                     {user && user.role === 'admin' && (
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                    >
-                        ➕ Nueva Categoría
-                    </button>
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        >
+                            ➕ Nueva Categoría
+                        </button>
                     )}
                 </div>
 
@@ -189,23 +188,23 @@ const Categories = () => {
                                         {category.isActive ? 'Activo' : 'Inactivo'}
                                     </span>
                                     {user && user.role === 'admin' && (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => {
-                                                setEditingCategory(category)
-                                                setShowModal(true)
-                                            }}
-                                            className="text-blue-600 hover:text-blue-900 text-sm"
-                                        >
-                                            ✏️ Editar
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(category._id)}
-                                            className="text-red-600 hover:text-red-900 text-sm"
-                                        >
-                                            🗑️ Eliminar
-                                        </button>
-                                    </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setEditingCategory(category)
+                                                    setShowModal(true)
+                                                }}
+                                                className="text-blue-600 hover:text-blue-900 text-sm"
+                                            >
+                                                ✏️ Editar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(category._id)}
+                                                className="text-red-600 hover:text-red-900 text-sm"
+                                            >
+                                                🗑️ Eliminar
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -252,23 +251,23 @@ const Categories = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             {user && user.role === 'admin' && (
-                                            <>
-                                            <button
-                                                onClick={() => {
-                                                    setEditingCategory(category)
-                                                    setShowModal(true)
-                                                }}
-                                                className="text-blue-600 hover:text-blue-900 mr-4"
-                                            >
-                                                ✏️ Editar
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(category._id)}
-                                                className="text-red-600 hover:text-red-900"
-                                            >
-                                                🗑️ Eliminar
-                                            </button>
-                                            </>
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingCategory(category)
+                                                            setShowModal(true)
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-900 mr-4"
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(category._id)}
+                                                        className="text-red-600 hover:text-red-900"
+                                                    >
+                                                        🗑️ Eliminar
+                                                    </button>
+                                                </>
                                             )}
                                         </td>
                                     </tr>
@@ -310,7 +309,7 @@ const Categories = () => {
                 }
                 onSubmit={handleSubmitCategory}
             />
-        </DashboardLayout>
+        </PageTransition>
     )
 }
 

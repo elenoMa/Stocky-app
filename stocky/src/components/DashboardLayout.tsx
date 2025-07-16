@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import boxyLogo from '../assets/boxy.svg'
@@ -22,6 +22,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const location = useLocation()
     const navigate = useNavigate()
     const user = getUser();
+    const [isAnimating, setIsAnimating] = useState(false);
+
+    useEffect(() => {
+        setIsAnimating(true);
+        const timeout = setTimeout(() => setIsAnimating(false), 400);
+        return () => clearTimeout(timeout);
+    }, [location.pathname]);
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
@@ -51,7 +58,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
                 <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl transition-colors duration-300">
                     <div className="flex flex-col items-center py-8 border-b border-gray-200">
-                        <img src={boxyLogo} alt="Stocky logo" className="h-20 w-20 mb-2" />
+                        <img src={boxyLogo} alt="Stocky logo" className={`h-20 w-20 mb-2 transition-transform duration-300 ${isAnimating ? 'animate-zoom' : ''}`} />
                         <span className="text-3xl font-bold text-gray-900">Stocky</span>
                     </div>
                     <nav className="flex-1 px-4 py-6 space-y-2">
@@ -106,7 +113,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
                 <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm transition-colors duration-300">
                     <div className="flex flex-col items-center py-8 border-b border-gray-200">
-                        <img src={boxyLogo} alt="Stocky logo" className="h-20 w-20 mb-2" />
+                        <img src={boxyLogo} alt="Stocky logo" className={`h-20 w-20 mb-2 transition-transform duration-300 ${isAnimating ? 'animate-zoom' : ''}`} />
                         <span className="text-3xl font-bold text-gray-900">Stocky</span>
                     </div>
                     <nav className="flex-1 px-4 py-6 space-y-2">
@@ -180,10 +187,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {/* Contenido */}
                 <main className="py-6">
                     <div className="px-8">
-                        {children}
+                        {children ?? <div style={{ minHeight: 200 }}></div>}
                     </div>
                 </main>
             </div>
+
+            <style>{`
+                @keyframes zoom {
+                    0% { transform: scale(1); }
+                    40% { transform: scale(1.18); }
+                    100% { transform: scale(1); }
+                }
+                .animate-zoom {
+                    animation: zoom 0.4s cubic-bezier(.4,1.7,.7,1.1);
+                }
+            `}</style>
         </div>
     )
 }
