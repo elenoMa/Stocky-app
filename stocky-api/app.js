@@ -10,6 +10,7 @@ import productRoutes from './src/routes/products.js';
 import movementRoutes from './src/routes/movements.js';
 import categoryRoutes from './src/routes/categories.js';
 import authRoutes from './src/routes/auth.js';
+import usersRoutes from './src/routes/users.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/movements', authMiddleware, movementRoutes);
 app.use('/api/categories', authMiddleware, categoryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 // Middleware de manejo de errores
 app.use((err, req, res, next) => {

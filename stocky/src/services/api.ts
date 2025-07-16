@@ -145,4 +145,52 @@ const deleteCategory = async (id: string) => {
     return res.json();
 }
 
-export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory };
+const fetchUsers = async () => {
+    const res = await fetch(`${API_URL}/users`, {
+        headers: buildHeaders()
+    });
+    if (!res.ok) {
+        throw new Error('Failed to fetch users');
+    }
+    return res.json();
+}
+
+const createUser = async (user: { username: string; email: string; password: string; role: string }) => {
+    const res = await fetch(`${API_URL}/users`, {
+        method: 'POST',
+        headers: buildHeaders(),
+        body: JSON.stringify(user)
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Error al crear usuario');
+    }
+    return res.json();
+}
+
+const updateUser = async (id: string, user: { username?: string; email?: string; password?: string; role?: string }) => {
+    const res = await fetch(`${API_URL}/users/${id}`, {
+        method: 'PUT',
+        headers: buildHeaders(),
+        body: JSON.stringify(user)
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Error al editar usuario');
+    }
+    return res.json();
+}
+
+const deleteUser = async (id: string) => {
+    const res = await fetch(`${API_URL}/users/${id}`, {
+        method: 'DELETE',
+        headers: buildHeaders(false)
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Error al eliminar usuario');
+    }
+    return res.json();
+}
+
+export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser };

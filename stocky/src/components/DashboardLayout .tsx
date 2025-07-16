@@ -75,6 +75,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 {item.name}
                             </NavLink>
                         ))}
+                        {user && user.role === 'admin' && (
+                            <NavLink
+                                to="/users"
+                                onClick={() => setSidebarOpen(false)}
+                                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                    isActive('/users')
+                                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <span className="mr-3 text-lg">👥</span>
+                                Usuarios
+                            </NavLink>
+                        )}
                     </nav>
                     <div className="border-t border-gray-200 p-4">
                         <div className="flex items-center">
@@ -120,6 +134,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 {item.name}
                             </NavLink>
                         ))}
+                        {user && user.role === 'admin' && (
+                            <NavLink
+                                to="/users"
+                                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                    isActive('/users')
+                                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <span className="mr-3 text-lg">👥</span>
+                                Usuarios
+                            </NavLink>
+                        )}
                     </nav>
 
                     {/* Usuario */}
