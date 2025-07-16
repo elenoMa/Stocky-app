@@ -6,6 +6,7 @@ import Movements from "../pages/Movements";
 import Categories from "../pages/Categories";
 import Users from "../pages/Users";
 import Suppliers from "../pages/Suppliers";
+import Tasks from '../pages/Tasks';
 import ProtectedRoute from "./ProtectedRoute";
 
 function getToken() {
@@ -24,6 +25,7 @@ export default function AppRouter() {
                 <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
                 <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
                 <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+                <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     )

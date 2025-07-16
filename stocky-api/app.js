@@ -13,6 +13,7 @@ import categoryRoutes from './src/routes/categories.js';
 import authRoutes from './src/routes/auth.js';
 import usersRoutes from './src/routes/users.js';
 import suppliersRouter from './src/routes/suppliers.js';
+import tasksRoutes from './src/routes/tasks.js';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/categories', auth, categoryRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/suppliers', suppliersRouter);
+app.use('/api/tasks', tasksRoutes);
 
 // Middleware de manejo de errores
 app.use((err, req, res, next) => {

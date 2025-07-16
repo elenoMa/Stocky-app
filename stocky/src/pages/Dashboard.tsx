@@ -6,17 +6,18 @@ import QuickStockOutForm from "../components/QuickStockOutForm";
 import StockCharts from "../components/StockCharts";
 import RecentMovementsTable from "../components/RecentMovementsTable";
 import StatsCard from '../components/StatsCard'
-import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats, fetchSuppliers, fetchRecentMovements, fetchTopSellingProducts } from '../services/api'
+import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats, fetchSuppliers, fetchRecentMovements, fetchTopSellingProducts, fetchTasks } from '../services/api'
 import { calculateProductStats } from '../utils/productUtils'
 import { calculateMovementStats } from '../utils/movementUtils'
 import ProductFormModal from '../components/ProductFormModal';
 import QuickMovementModal from '../components/QuickMovementModal';
 import { createProduct, createMovement, createCategory } from '../services/api';
-import type { ProductFormData } from '../types/product';
+import type { ProductFormData, Product } from '../types/product';
 import type { QuickMovementData } from '../types/movement';
 import CategoryFormModal from '../components/CategoryFormModal';
 import ContactSupplierModal from '../components/ContactSupplierModal';
 import { useNavigate } from 'react-router-dom';
+import type { Task } from '../services/api';
 
 // Datos mock más realistas
 const mockDashboardData = {
@@ -76,7 +77,7 @@ const mockDashboardData = {
 const Dashboard = () => {
     const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('week')
     const [showNotifications, setShowNotifications] = useState(false)
-    const [products, setProducts] = useState([])
+    const [products, setProducts] = useState<Product[]>([])
     const [movements, setMovements] = useState([])
     const [categories, setCategories] = useState([])
     const [loading, setLoading] = useState(true)
@@ -98,6 +99,11 @@ const Dashboard = () => {
     const [recentMovements, setRecentMovements] = useState([])
     const [topProducts, setTopProducts] = useState([])
     const navigate = useNavigate();
+    const [tasks, setTasks] = useState<Task[]>([]);
+
+    // Obtener usuario actual
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
 
     // Hoist loadData so it can be used by modals and useEffect
     const loadData = async () => {
@@ -144,6 +150,11 @@ const Dashboard = () => {
     useEffect(() => {
         loadData()
     }, [])
+
+    // Cargar tareas reales
+    useEffect(() => {
+        fetchTasks().then(setTasks).catch(() => setTasks([]));
+    }, []);
 
     const productStats = calculateProductStats(products)
     const movementStats = calculateMovementStats(movements)
@@ -367,13 +378,15 @@ const Dashboard = () => {
                             <div className="text-5xl mb-4">➕</div>
                             <div className="text-lg font-medium text-gray-700">Nuevo Producto</div>
                         </button>
-                        <button
-                            onClick={() => setShowCategoryModal(true)}
-                            className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-2 col-start-1"
-                        >
-                            <div className="text-5xl mb-4">📂</div>
-                            <div className="text-lg font-medium text-gray-700">Nueva Categoría</div>
-                        </button>
+                        {user?.role === 'admin' && (
+                            <button
+                                onClick={() => setShowCategoryModal(true)}
+                                className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-2 col-start-1"
+                            >
+                                <div className="text-5xl mb-4">📂</div>
+                                <div className="text-lg font-medium text-gray-700">Nueva Categoría</div>
+                            </button>
+                        )}
                         {/* Centro: Descontar Stock Rápido (ocupa dos filas) */}
                         <div className="p-8 bg-white rounded-lg shadow border flex flex-col items-center justify-center row-span-2 col-start-2 min-h-[260px]">
                             <div className="text-5xl mb-4">🔻</div>
@@ -386,7 +399,7 @@ const Dashboard = () => {
                                         const product = products.find((p: any) => p.sku === data.code || p.code === data.code);
                                         if (!product) throw new Error('Producto no encontrado');
                                         await createMovement({
-                                            productId: product.id || product._id,
+                                            productId: product.id,
                                             type: data.type,
                                             quantity: Number(data.quantity),
                                             reason: data.type === 'entrada' ? 'ajuste' : 'venta',
@@ -426,68 +439,73 @@ const Dashboard = () => {
                         <StockCharts products={products} categories={categories} movements={movements} suppliers={suppliers} />
                     </div>
 
-                    {/* Métricas de rendimiento */}
-                    <div className="bg-white rounded-lg shadow border p-4">
-                        <h3 className="text-lg font-semibold mb-4">📈 Métricas de Rendimiento</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Rotación de Stock</span>
-                                    <span className="text-sm font-semibold">{performanceMetrics.stockTurnover}</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.min(Number(performanceMetrics.stockTurnover) * 20, 100)}%` }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Valor Promedio</span>
-                                    <span className="text-sm font-semibold">${performanceMetrics.averageOrderValue}</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-green-600 h-2 rounded-full" style={{ width: `${Math.min(Number(performanceMetrics.averageOrderValue) / 20, 100)}%` }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Rendimiento Proveedores</span>
-                                    <span className="text-sm font-semibold text-gray-400">No disponible</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-purple-200 h-2 rounded-full" style={{ width: `0%` }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Precisión Inventario</span>
-                                    <span className="text-sm font-semibold text-gray-400">No disponible</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-yellow-200 h-2 rounded-full" style={{ width: `0%` }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Tareas pendientes */}
-                    <div className="bg-white rounded-lg shadow border p-4">
-                        <h3 className="text-lg font-semibold mb-4">📋 Tareas Pendientes</h3>
-                        <div className="space-y-3">
-                            {mockDashboardData.upcomingTasks.map((task) => (
-                                <div key={task.id} className="p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium">{task.title}</span>
-                                        <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}>
-                                            {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Media' : 'Baja'}
-                                        </span>
+                    {/* Columna derecha: Métricas, Tareas y Productos por Proveedor */}
+                    <div className="flex flex-col gap-8 lg:col-span-2 h-full" style={{ minHeight: '500px' }}>
+                        <div className="bg-white rounded-lg shadow border p-4">
+                            <h3 className="text-lg font-semibold mb-4">📈 Métricas de Rendimiento</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm text-gray-600">Rotación de Stock</span>
+                                        <span className="text-sm font-semibold">{performanceMetrics.stockTurnover}</span>
                                     </div>
-                                    <div className="text-xs text-gray-500">{new Date(task.date).toLocaleDateString('es-ES')}</div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.min(Number(performanceMetrics.stockTurnover) * 20, 100)}%` }}></div>
+                                    </div>
                                 </div>
-                            ))}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm text-gray-600">Valor Promedio</span>
+                                        <span className="text-sm font-semibold">${performanceMetrics.averageOrderValue}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div className="bg-green-600 h-2 rounded-full" style={{ width: `${Math.min(Number(performanceMetrics.averageOrderValue) / 20, 100)}%` }}></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm text-gray-600">Rendimiento Proveedores</span>
+                                        <span className="text-sm font-semibold text-gray-400">No disponible</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div className="bg-purple-200 h-2 rounded-full" style={{ width: `0%` }}></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm text-gray-600">Precisión Inventario</span>
+                                        <span className="text-sm font-semibold text-gray-400">No disponible</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div className="bg-yellow-200 h-2 rounded-full" style={{ width: `0%` }}></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <button className="w-full mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            Ver todas las tareas →
-                        </button>
+                        <div className="bg-white rounded-lg shadow border p-4 flex-grow flex flex-col">
+                            <h3 className="text-lg font-semibold mb-4">📋 Tareas Pendientes</h3>
+                            <div className="space-y-3">
+                                {tasks.slice(0, 3).map((task: any) => (
+                                    <div key={task._id} className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                (task.priority ?? 'media') === 'alta' ? 'bg-red-100 text-red-700' :
+                                                (task.priority ?? 'media') === 'media' ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-green-100 text-green-700'
+                                            }`}>
+                                                {(task.priority ?? 'media').charAt(0).toUpperCase() + (task.priority ?? 'media').slice(1)}
+                                            </span>
+                                            <span className="ml-1 w-4 h-4 rounded-full border border-gray-300" style={{ background: task.color || '#3b82f6' }} title={task.color || '#3b82f6'}></span>
+                                            <span className="text-sm font-medium">{task.description}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {tasks.length === 0 && <div className="text-gray-500 text-center">No tienes tareas pendientes.</div>}
+                            </div>
+                            <button className="w-full mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium" onClick={() => navigate('/tasks')}>
+                                Ver todas las tareas →
+                            </button>
+                        </div>
                     </div>
                 </div>
 

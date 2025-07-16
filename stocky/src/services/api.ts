@@ -281,4 +281,48 @@ const fetchTopSellingProducts = async (limit = 5) => {
     return res.json();
 }
 
-export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchTopSellingProducts };
+// --- TAREAS ---
+export type Task = {
+  _id: string;
+  description: string;
+  completed: boolean;
+  priority: 'alta' | 'media' | 'baja';
+  color: string;
+  createdAt: string;
+};
+
+const fetchTasks = async (): Promise<Task[]> => {
+  const res = await fetchWithAuth(`${API_URL}/tasks`, { headers: buildHeaders() });
+  if (!res.ok) throw new Error('Error al obtener tareas');
+  return res.json();
+};
+
+const createTask = async (description: string, priority = 'media', color = '#3b82f6'): Promise<Task> => {
+  const res = await fetchWithAuth(`${API_URL}/tasks`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify({ description, priority, color })
+  });
+  if (!res.ok) throw new Error('Error al crear tarea');
+  return res.json();
+};
+
+const updateTask = async (id: string, updates: Partial<Pick<Task, 'description' | 'completed'>>): Promise<Task> => {
+  const res = await fetchWithAuth(`${API_URL}/tasks/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(updates)
+  });
+  if (!res.ok) throw new Error('Error al actualizar tarea');
+  return res.json();
+};
+
+const deleteTask = async (id: string): Promise<void> => {
+  const res = await fetchWithAuth(`${API_URL}/tasks/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(false)
+  });
+  if (!res.ok) throw new Error('Error al eliminar tarea');
+};
+
+export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchTopSellingProducts, fetchTasks, createTask, updateTask, deleteTask };
