@@ -1,4 +1,6 @@
 import type { QuickMovementData } from '../types/movement'
+import { useEffect, useState } from 'react'
+import { fetchProducts } from '../services/api'
 
 interface QuickMovementModalProps {
     show: boolean
@@ -7,16 +9,27 @@ interface QuickMovementModalProps {
 }
 
 const QuickMovementModal = ({ show, onClose, onSubmit }: QuickMovementModalProps) => {
+    const [products, setProducts] = useState<{ id: string, name: string }[]>([])
+    useEffect(() => {
+        if (show) {
+            fetchProducts().then(data => {
+                const arr = data.products || data
+                setProducts(arr.map((p: any) => ({ id: p.id, name: p.name })))
+            })
+        }
+    }, [show])
     if (!show) return null
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         const formData = new FormData(e.currentTarget)
         const data = {
+            productId: formData.get('product') as string,
             type: formData.get('type') as 'entrada' | 'salida',
-            product: formData.get('product') as string,
             quantity: parseInt(formData.get('quantity') as string),
             reason: formData.get('reason') as string,
+            user: 'Admin',
+            cost: formData.get('cost') ? parseFloat(formData.get('cost') as string) : undefined,
             notes: formData.get('notes') as string || undefined
         }
         onSubmit(data)
@@ -51,11 +64,9 @@ const QuickMovementModal = ({ show, onClose, onSubmit }: QuickMovementModalProps
                             required
                         >
                             <option value="">Seleccionar producto...</option>
-                            <option value="yerba">Yerba</option>
-                            <option value="cafe">Café</option>
-                            <option value="fideos">Fideos</option>
-                            <option value="detergente">Detergente</option>
-                            <option value="papel-higienico">Papel Higiénico</option>
+                            {products.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
                         </select>
                     </div>
                     <div>
@@ -87,6 +98,19 @@ const QuickMovementModal = ({ show, onClose, onSubmit }: QuickMovementModalProps
                             <option value="ajuste">Ajuste de inventario</option>
                             <option value="devolucion">Devolución</option>
                         </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Costo unitario (opcional)
+                        </label>
+                        <input
+                            name="cost"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="0.00"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">

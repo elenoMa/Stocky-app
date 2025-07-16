@@ -4,7 +4,7 @@ import StatsCard from '../components/StatsCard'
 import SearchBar from '../components/SearchBar'
 import EmptyState from '../components/EmptyState'
 import CategoryFormModal from '../components/CategoryFormModal'
-import { fetchCategories } from '../services/api'
+import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../services/api'
 
 interface Category {
     _id: string
@@ -23,15 +23,24 @@ const Categories = () => {
     const [editingCategory, setEditingCategory] = useState<Category | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+    const [error, setError] = useState<string | null>(null)
+
+    const loadCategories = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const data = await fetchCategories()
+            setCategories(data.categories || data)
+        } catch (err: any) {
+            setError('Error al cargar categorías')
+            setCategories([])
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        fetchCategories()
-            .then(data => setCategories(data.categories || data))
-            .catch(err => {
-                console.error(err)
-                setCategories([])
-            })
-            .finally(() => setLoading(false))
+        loadCategories()
     }, [])
 
     const filteredCategories = categories.filter(category =>
@@ -40,36 +49,45 @@ const Categories = () => {
         category.color?.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
-            setCategories(categories.filter(cat => cat._id !== id))
+            setLoading(true)
+            setError(null)
+            try {
+                await deleteCategory(id)
+                await loadCategories()
+            } catch (err: any) {
+                setError('Error al eliminar categoría')
+            } finally {
+                setLoading(false)
+            }
         }
     }
 
-    const handleSubmitCategory = (data: { name: string; description: string; color: string }) => {
-        if (editingCategory) {
-            // Actualizar categoría existente
-            setCategories(categories.map(cat => 
-                cat._id === editingCategory._id 
-                    ? { ...cat, ...data }
-                    : cat
-            ))
-        } else {
-            // Crear nueva categoría
-            const newCategory: Category = {
-                _id: Date.now().toString(),
-                ...data,
-                isActive: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+    const handleSubmitCategory = async (data: { name: string; description: string; color: string }) => {
+        setLoading(true)
+        setError(null)
+        try {
+            if (editingCategory) {
+                await updateCategory(editingCategory._id, data)
+            } else {
+                await createCategory(data)
             }
-            setCategories([...categories, newCategory])
+            await loadCategories()
+            setShowModal(false)
+            setEditingCategory(null)
+        } catch (err: any) {
+            setError('Error al guardar categoría')
+        } finally {
+            setLoading(false)
         }
-        setEditingCategory(null)
     }
 
     if (loading) {
         return <div className="flex justify-center items-center h-64">Cargando categorías...</div>
+    }
+    if (error) {
+        return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
     }
 
     return (

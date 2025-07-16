@@ -1,5 +1,6 @@
 import Movement from '../models/Movement.js';
 import Product from '../models/Product.js';
+import Category from '../models/Category.js';
 
 // Obtener todos los movimientos
 export const getMovements = async (req, res) => {
@@ -75,6 +76,15 @@ export const createMovement = async (req, res) => {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }
 
+    // Buscar el nombre de la categoría manualmente
+    let categoryName = product.category;
+    if (product.category) {
+      const categoryDoc = await Category.findById(product.category);
+      if (categoryDoc) {
+        categoryName = categoryDoc.name;
+      }
+    }
+
     const previousStock = product.stock;
     let newStock;
 
@@ -94,7 +104,7 @@ export const createMovement = async (req, res) => {
     const movement = new Movement({
       productId,
       productName: product.name,
-      category: product.category,
+      category: categoryName,
       type,
       quantity,
       previousStock,

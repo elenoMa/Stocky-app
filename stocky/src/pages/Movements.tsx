@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { fetchMovements } from '../services/api'
+import { fetchMovements, fetchRecentMovements, createMovement, fetchCategories, fetchMovementsTotal } from '../services/api'
 import DashboardLayout from '../components/DashboardLayout '
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
@@ -19,41 +19,91 @@ const Movements = () => {
     const [filterDate, setFilterDate] = useState('')
     const [showQuickMovement, setShowQuickMovement] = useState(false)
     const [viewMode, setViewMode] = useState<'recent' | 'all'>('recent')
+    const [error, setError] = useState<string | null>(null)
+    const [categories, setCategories] = useState<{ _id: string, name: string }[]>([])
+
+    const loadMovements = async (mode: 'recent' | 'all' = viewMode) => {
+        setLoading(true)
+        setError(null)
+        try {
+            let data
+            if (mode === 'recent') {
+                data = await fetchRecentMovements()
+            } else {
+                data = await fetchMovements()
+            }
+            setMovements(data.movements || data)
+        } catch (err: any) {
+            setError('Error al cargar movimientos')
+            setMovements([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const loadCategories = async () => {
+        try {
+            const data = await fetchCategories()
+            setCategories(data.categories || data)
+        } catch {}
+    }
 
     useEffect(() => {
-        fetchMovements()
-            .then(data => setMovements(data.movements || data))
-            .catch(err => {
-                console.error(err)
-                setMovements([])
-            })
-            .finally(() => setLoading(false))
-    }, [])
-
-    // Obtener categorías únicas
-    const categories = useMemo(() => {
-        const uniqueCategories = [...new Set(movements.map(m => m.category))]
-        return uniqueCategories
-    }, [movements])
+        loadMovements(viewMode)
+        loadCategories()
+    }, [viewMode])
 
     // Filtrar movimientos usando utilidades
     const filteredMovements = useMemo(() => {
-        return filterMovements(movements, searchTerm, filterType, filterCategory, filterDate, viewMode)
-    }, [movements, searchTerm, filterType, filterCategory, filterDate, viewMode])
+        return filterMovements(movements, searchTerm, filterType, filterCategory, filterDate, 'all')
+    }, [movements, searchTerm, filterType, filterCategory, filterDate])
 
     // Calcular estadísticas usando utilidades
     const stats = useMemo(() => {
         return calculateMovementStats(movements)
     }, [movements])
 
+    // Crear un map de id a nombre para categorías
+    const categoryNameMap = useMemo(() => {
+        const map: Record<string, string> = {}
+        categories.forEach(cat => { map[cat._id] = cat.name })
+        return map
+    }, [categories])
+
+    // Obtener nombres únicos de categorías presentes en movimientos
+    const movementCategoryNames = useMemo(() => {
+        const names = new Set<string>()
+        movements.forEach(m => {
+            const found = categories.find(cat => cat._id === m.category)
+            if (found) {
+                names.add(found.name)
+            } else {
+                names.add(m.category)
+            }
+        })
+        return Array.from(names)
+    }, [movements, categories])
+
     if (loading) {
         return <div className="flex justify-center items-center h-64">Cargando movimientos...</div>
     }
 
-    const handleQuickMovementSubmit = (data: QuickMovementData) => {
-        // Aquí se procesaría la creación del movimiento
-        console.log('Nuevo movimiento:', data)
-        // En una implementación real, se agregaría el movimiento a la lista
+    if (error) {
+        return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
+    }
+
+    const handleQuickMovementSubmit = async (data: QuickMovementData) => {
+        setLoading(true)
+        setError(null)
+        try {
+            await createMovement(data)
+            await loadMovements(viewMode)
+            setShowQuickMovement(false)
+        } catch (err: any) {
+            setError('Error al crear movimiento')
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -133,11 +183,11 @@ const Movements = () => {
                     onFilterCategoryChange={setFilterCategory}
                     filterDate={filterDate}
                     onFilterDateChange={setFilterDate}
-                    categories={categories}
+                    categories={categories.map(cat => cat.name)}
                 />
 
                 {/* Tabla de movimientos */}
-                <MovementsTable movements={filteredMovements} />
+                <MovementsTable movements={filteredMovements} categoryNameMap={categoryNameMap} />
 
                 {/* Estado vacío */}
                 {filteredMovements.length === 0 && (

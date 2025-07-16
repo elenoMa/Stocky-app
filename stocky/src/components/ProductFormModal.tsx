@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import React from "react";
+import type { ProductFormData } from '../types/product';
 
 interface Product {
     id: string
@@ -20,7 +21,7 @@ interface ProductFormModalProps {
     show: boolean;
     onClose: () => void;
     product?: Product | null;
-    onSubmit: (data: Partial<Product>) => void;
+    onSubmit: (data: ProductFormData) => void | Promise<void>;
 }
 
 interface FormData {
@@ -55,8 +56,8 @@ const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModal
         }
     }, [product, setValue, reset]);
 
-    const handleFormSubmit = (data: FormData) => {
-        onSubmit(data);
+    const handleFormSubmit = async (data: FormData) => {
+        await onSubmit(data);
         reset();
         onClose();
     }

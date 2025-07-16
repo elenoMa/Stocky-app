@@ -1,14 +1,26 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Link, NavLink, useLocation } from "react-router-dom"
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 
 interface DashboardLayoutProps {
     children: ReactNode;
 }
 
+function getUser() {
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+        return JSON.parse(userStr);
+    } catch {
+        return null;
+    }
+}
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const location = useLocation()
+    const navigate = useNavigate()
+    const user = getUser();
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
@@ -19,6 +31,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
     const isActive = (path: string) => {
         return location.pathname === path
+    }
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        navigate('/login');
     }
 
     return (
@@ -59,14 +79,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <div className="border-t border-gray-200 p-4">
                         <div className="flex items-center">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-700">ME</span>
+                                <span className="text-sm font-medium text-blue-700">{user ? user.username.slice(0,2).toUpperCase() : '??'}</span>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-700">Mariano Eleno</p>
-                                <p className="text-xs text-gray-500">Administrador</p>
+                                <p className="text-sm font-medium text-gray-700">{user ? user.username : 'Usuario'}</p>
+                                <p className="text-xs text-gray-500">{user ? (user.role === 'admin' ? 'Administrador' : 'Usuario') : ''}</p>
                             </div>
                         </div>
-                        <button className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={handleLogout} className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                             ❌ Cerrar sesión
                         </button>
                     </div>
@@ -106,14 +126,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <div className="border-t border-gray-200 p-4">
                         <div className="flex items-center">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-700">ME</span>
+                                <span className="text-sm font-medium text-blue-700">{user ? user.username.slice(0,2).toUpperCase() : '??'}</span>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-700">Mariano Eleno</p>
-                                <p className="text-xs text-gray-500">Administrador</p>
+                                <p className="text-sm font-medium text-gray-700">{user ? user.username : 'Usuario'}</p>
+                                <p className="text-xs text-gray-500">{user ? (user.role === 'admin' ? 'Administrador' : 'Usuario') : ''}</p>
                             </div>
                         </div>
-                        <button className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={handleLogout} className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                             ❌ Cerrar sesión
                         </button>
                     </div>
@@ -137,7 +157,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </div>
                     <div className="flex items-center gap-x-4">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-700">ME</span>
+                            <span className="text-sm font-medium text-blue-700">{user ? user.username.slice(0,2).toUpperCase() : '??'}</span>
                         </div>
                     </div>
                 </div>
