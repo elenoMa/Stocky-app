@@ -6,7 +6,7 @@ import QuickStockOutForm from "../components/QuickStockOutForm";
 import StockCharts from "../components/StockCharts";
 import RecentMovementsTable from "../components/RecentMovementsTable";
 import StatsCard from '../components/StatsCard'
-import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats, fetchSuppliers } from '../services/api'
+import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats, fetchSuppliers, fetchRecentMovements, fetchTopSellingProducts } from '../services/api'
 import { calculateProductStats } from '../utils/productUtils'
 import { calculateMovementStats } from '../utils/movementUtils'
 import ProductFormModal from '../components/ProductFormModal';
@@ -16,6 +16,7 @@ import type { ProductFormData } from '../types/product';
 import type { QuickMovementData } from '../types/movement';
 import CategoryFormModal from '../components/CategoryFormModal';
 import ContactSupplierModal from '../components/ContactSupplierModal';
+import { useNavigate } from 'react-router-dom';
 
 // Datos mock más realistas
 const mockDashboardData = {
@@ -94,6 +95,9 @@ const Dashboard = () => {
     const [showStockAlertsModal, setShowStockAlertsModal] = useState(false);
     const [suppliers, setSuppliers] = useState([])
     const [showContactSupplierModal, setShowContactSupplierModal] = useState(false);
+    const [recentMovements, setRecentMovements] = useState([])
+    const [topProducts, setTopProducts] = useState([])
+    const navigate = useNavigate();
 
     // Hoist loadData so it can be used by modals and useEffect
     const loadData = async () => {
@@ -104,6 +108,8 @@ const Dashboard = () => {
             const movementsData = await fetchMovements()
             const categoriesData = await fetchCategories()
             const suppliersData = await fetchSuppliers()
+            const recentMovementsData = await fetchRecentMovements()
+            const topProductsData = await fetchTopSellingProducts(5)
             const movementStats = await fetchMovementsStats();
             // Forzar conversión de campos numéricos
             const products = (productsData.products || productsData).map((p: any) => ({
@@ -118,6 +124,8 @@ const Dashboard = () => {
             setMovements(movementsData.movements || movementsData)
             setCategories(categoriesData.categories || categoriesData)
             setSuppliers(suppliersData.suppliers || suppliersData)
+            setRecentMovements(recentMovementsData.movements || recentMovementsData)
+            setTopProducts(topProductsData)
             // Calcular métricas de rendimiento reales
             const stockTurnover = products.length > 0 ? parseFloat((movementStats.totalMovements / products.length).toFixed(2)) : 0;
             const averageOrderValue = products.length > 0 ? parseFloat((products.reduce((sum: number, p: any) => sum + p.price, 0) / products.length).toFixed(2)) : 0;
@@ -370,7 +378,27 @@ const Dashboard = () => {
                         <div className="p-8 bg-white rounded-lg shadow border flex flex-col items-center justify-center row-span-2 col-start-2 min-h-[260px]">
                             <div className="text-5xl mb-4">🔻</div>
                             <div className="w-full max-w-xs">
-                                <QuickStockOutForm />
+                                <QuickStockOutForm onSubmit={async (data) => {
+                                    setModalLoading(true);
+                                    setModalError(null);
+                                    try {
+                                        // Buscar el producto por código
+                                        const product = products.find((p: any) => p.sku === data.code || p.code === data.code);
+                                        if (!product) throw new Error('Producto no encontrado');
+                                        await createMovement({
+                                            productId: product.id || product._id,
+                                            type: data.type,
+                                            quantity: Number(data.quantity),
+                                            reason: data.type === 'entrada' ? 'ajuste' : 'venta',
+                                            user: 'Admin',
+                                        });
+                                        await loadData();
+                                    } catch (err: any) {
+                                        setModalError(err.message || 'Error al crear movimiento');
+                                    } finally {
+                                        setModalLoading(false);
+                                    }
+                                }} />
                             </div>
                         </div>
                         {/* Columna derecha: Generar Reporte (arriba), Contactar Proveedor (abajo) */}
@@ -472,13 +500,13 @@ const Dashboard = () => {
                         </div>
                         <div className="p-4">
                             <div className="space-y-3">
-                                {mockDashboardData.recentMovements.map((movement) => (
-                                    <div key={movement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                {recentMovements.slice(0, 5).map((movement: any) => (
+                                    <div key={movement._id || movement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <span className="text-xl">{getMovementIcon(movement.type)}</span>
                                             <div>
-                                                <p className="font-medium text-gray-900">{movement.product}</p>
-                                                <p className="text-sm text-gray-500">{movement.user} • {formatDate(movement.date)}</p>
+                                                <p className="font-medium text-gray-900">{movement.productName || movement.product || (products.find((p: any) => p.id === movement.productId || p._id === movement.productId)?.name) || 'Producto'}</p>
+                                                <p className="text-sm text-gray-500">{movement.user || '—'} • {formatDate(movement.createdAt || movement.date)}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
@@ -491,7 +519,7 @@ const Dashboard = () => {
                                 ))}
                             </div>
                             <div className="mt-4 text-center">
-                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium" onClick={() => navigate('/movements')}>
                                     Ver todos los movimientos →
                                 </button>
                             </div>
@@ -505,28 +533,27 @@ const Dashboard = () => {
                         </div>
                         <div className="p-4">
                             <div className="space-y-3">
-                                {mockDashboardData.topProducts.map((product, index) => (
-                                    <div key={product.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                {topProducts.length === 0 && <div className="text-gray-500 text-center">No hay ventas registradas.</div>}
+                                {topProducts.map((product: any, index: number) => (
+                                    <div key={product._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
                                                 {index + 1}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-gray-900">{product.name}</p>
+                                                <p className="font-medium text-gray-900">{product.productName}</p>
                                                 <p className="text-sm text-gray-500">{product.category}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-semibold text-gray-900">{product.sales} ventas</p>
-                                            <p className={`text-sm ${product.stock < 10 ? 'text-red-600' : 'text-gray-500'}`}>
-                                                Stock: {product.stock}
-                                            </p>
+                                            <p className="font-semibold text-gray-900">{product.totalSales} ventas</p>
+                                            <p className={`text-sm ${product.stock < 10 ? 'text-red-600' : 'text-gray-500'}`}>Stock: {products.find((p: any) => p.id === product._id || p._id === product._id)?.stock ?? '-'}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                             <div className="mt-4 text-center">
-                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium" onClick={() => navigate('/products')}>
                                     Ver todos los productos →
                                 </button>
                             </div>
@@ -540,6 +567,7 @@ const Dashboard = () => {
                     onClose={() => { setShowProductModal(false); setModalError(null); }}
                     product={null}
                     onSubmit={handleProductSubmit}
+                    suppliers={suppliers}
                 />
                 <QuickMovementModal
                     show={showQuickMovementModal}

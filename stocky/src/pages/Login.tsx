@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 interface LoginForm {
@@ -18,6 +18,13 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false)
     const [errors, setErrors] = useState<Partial<LoginForm>>({})
     const [apiError, setApiError] = useState<string | null>(null)
+
+    useEffect(() => {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [navigate]);
 
     const handleInputChange = (field: keyof LoginForm, value: string | boolean) => {
         setFormData(prev => ({ ...prev, [field]: value }))

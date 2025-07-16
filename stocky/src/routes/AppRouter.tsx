@@ -8,11 +8,15 @@ import Users from "../pages/Users";
 import Suppliers from "../pages/Suppliers";
 import ProtectedRoute from "./ProtectedRoute";
 
+function getToken() {
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
+}
+
 export default function AppRouter() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" />} />
+                <Route path="/" element={getToken() ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />

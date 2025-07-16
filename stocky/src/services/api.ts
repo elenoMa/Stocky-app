@@ -239,4 +239,12 @@ const deleteSupplier = async (id: string) => {
     return res.json();
 }
 
-export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier };
+const fetchTopSellingProducts = async (limit = 5) => {
+    const res = await fetch(`${API_URL}/movements/top-selling?limit=${limit}`, {
+        headers: buildHeaders()
+    });
+    if (!res.ok) throw new Error('Error al obtener productos más vendidos');
+    return res.json();
+}
+
+export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, fetchTopSellingProducts };
