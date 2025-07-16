@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories } from '../services/api'
-import DashboardLayout from '../components/DashboardLayout '
+import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchSuppliers } from '../services/api'
+import DashboardLayout from '../components/DashboardLayout'
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
 import ProductFormModal from '../components/ProductFormModal'
@@ -23,6 +23,7 @@ const Products = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
     const [error, setError] = useState<string | null>(null)
     const [categories, setCategories] = useState<{ _id: string, name: string }[]>([])
+    const [suppliers, setSuppliers] = useState<any[]>([])
 
     const loadProducts = async () => {
         setLoading(true)
@@ -45,9 +46,17 @@ const Products = () => {
         } catch {}
     }
 
+    const loadSuppliers = async () => {
+        try {
+            const data = await fetchSuppliers()
+            setSuppliers(data.suppliers || data)
+        } catch {}
+    }
+
     useEffect(() => {
         loadProducts()
         loadCategories()
+        loadSuppliers()
     }, [])
 
     // Obtener nombres únicos de categorías presentes en productos
@@ -230,7 +239,7 @@ const Products = () => {
                                             <span className="text-xs text-gray-500">SKU: {product.sku}</span>
                                         </div>
                                         <div className="text-sm text-gray-600 mb-1">Categoría: {categoryName}</div>
-                                        <div className="text-sm text-gray-600 mb-1">Proveedor: {product.supplier}</div>
+                                        <div className="text-sm text-gray-600 mb-1">Proveedor: {product.supplier && typeof product.supplier === 'object' && product.supplier.name ? product.supplier.name : '—'}</div>
                                         <div className="text-sm text-gray-600 mb-1">Stock: <span className="font-semibold">{product.stock}</span> / {product.maxStock} (Mín: {product.minStock})</div>
                                         <div className="text-sm text-gray-600 mb-1">Precio: <span className="font-semibold">${product.price.toFixed(2)}</span></div>
                                         <div className="text-sm text-gray-600 mb-1">Estado: <span className="capitalize">{product.status}</span></div>
@@ -280,6 +289,7 @@ const Products = () => {
                     }}
                     product={editingProduct}
                     onSubmit={handleSubmitProduct}
+                    suppliers={suppliers}
                 />
             </div>
         </DashboardLayout>

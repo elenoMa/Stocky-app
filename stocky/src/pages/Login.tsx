@@ -171,13 +171,13 @@ const Login = () => {
                                     Recordarme
                                 </label>
                             </div>
-                            <button
+                            {/* <button
                                 type="button"
                                 className="text-sm text-blue-600 hover:text-blue-500 font-medium"
                                 disabled={isLoading}
                             >
                                 ¿Olvidaste tu contraseña?
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* Error de API */}
@@ -203,30 +203,8 @@ const Login = () => {
                             )}
                         </button>
 
-                        {/* Botón demo */}
-                        <button
-                            type="button"
-                            onClick={handleDemoLogin}
-                            disabled={isLoading}
-                            className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            🎯 Probar Demo
-                        </button>
                     </form>
 
-                    {/* Información adicional */}
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600">
-                            ¿No tienes una cuenta?{' '}
-                            <button
-                                type="button"
-                                className="text-blue-600 hover:text-blue-500 font-medium"
-                                disabled={isLoading}
-                            >
-                                Solicitar acceso
-                            </button>
-                        </p>
-                    </div>
                 </div>
 
                 {/* Footer */}

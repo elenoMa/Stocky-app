@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { fetchMovements, fetchRecentMovements, createMovement, fetchCategories, fetchMovementsTotal } from '../services/api'
-import DashboardLayout from '../components/DashboardLayout '
+import DashboardLayout from '../components/DashboardLayout'
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
 import FilterPanel from '../components/FilterPanel'

@@ -17,11 +17,18 @@ interface Product {
     status: 'active' | 'inactive' | 'low-stock'
 }
 
+interface Supplier {
+    _id: string;
+    name: string;
+    active: boolean;
+}
+
 interface ProductFormModalProps {
     show: boolean;
     onClose: () => void;
     product?: Product | null;
     onSubmit: (data: ProductFormData) => void | Promise<void>;
+    suppliers: Supplier[];
 }
 
 interface FormData {
@@ -36,7 +43,7 @@ interface FormData {
     description: string;
 }
 
-const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModalProps) => {
+const ProductFormModal = ({ show, onClose, product, onSubmit, suppliers }: ProductFormModalProps) => {
     const { register, handleSubmit, reset, setValue } = useForm<FormData>();
 
     // Pre-llenar formulario si estamos editando
@@ -153,11 +160,15 @@ const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModal
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Proveedor
                         </label>
-                        <input
-                            {...register('supplier', { required: 'El proveedor es requerido' })}
-                            placeholder="Ej: Proveedor A"
+                        <select
+                            {...register('supplier')}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                        >
+                            <option value="">Sin proveedor</option>
+                            {suppliers.filter(s => s.active).map(s => (
+                                <option key={s._id} value={s._id}>{s.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>

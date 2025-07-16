@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
-import DashboardLayout from "../components/DashboardLayout "
+import DashboardLayout from "../components/DashboardLayout";
 import SummaryCards from "../components/SummaryCards";
 import StockAlertsPanel from "../components/StockAlertsPanel";
 import QuickStockOutForm from "../components/QuickStockOutForm";
 import StockCharts from "../components/StockCharts";
 import RecentMovementsTable from "../components/RecentMovementsTable";
 import StatsCard from '../components/StatsCard'
-import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats } from '../services/api'
+import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats, fetchSuppliers } from '../services/api'
 import { calculateProductStats } from '../utils/productUtils'
 import { calculateMovementStats } from '../utils/movementUtils'
 import ProductFormModal from '../components/ProductFormModal';
@@ -15,6 +15,7 @@ import { createProduct, createMovement, createCategory } from '../services/api';
 import type { ProductFormData } from '../types/product';
 import type { QuickMovementData } from '../types/movement';
 import CategoryFormModal from '../components/CategoryFormModal';
+import ContactSupplierModal from '../components/ContactSupplierModal';
 
 // Datos mock más realistas
 const mockDashboardData = {
@@ -91,6 +92,8 @@ const Dashboard = () => {
     });
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [showStockAlertsModal, setShowStockAlertsModal] = useState(false);
+    const [suppliers, setSuppliers] = useState([])
+    const [showContactSupplierModal, setShowContactSupplierModal] = useState(false);
 
     // Hoist loadData so it can be used by modals and useEffect
     const loadData = async () => {
@@ -100,6 +103,7 @@ const Dashboard = () => {
             const productsData = await fetchProducts()
             const movementsData = await fetchMovements()
             const categoriesData = await fetchCategories()
+            const suppliersData = await fetchSuppliers()
             const movementStats = await fetchMovementsStats();
             // Forzar conversión de campos numéricos
             const products = (productsData.products || productsData).map((p: any) => ({
@@ -113,6 +117,7 @@ const Dashboard = () => {
             setProducts(products)
             setMovements(movementsData.movements || movementsData)
             setCategories(categoriesData.categories || categoriesData)
+            setSuppliers(suppliersData.suppliers || suppliersData)
             // Calcular métricas de rendimiento reales
             const stockTurnover = products.length > 0 ? parseFloat((movementStats.totalMovements / products.length).toFixed(2)) : 0;
             const averageOrderValue = products.length > 0 ? parseFloat((products.reduce((sum: number, p: any) => sum + p.price, 0) / products.length).toFixed(2)) : 0;
@@ -337,7 +342,7 @@ const Dashboard = () => {
                     <StatsCard
                         icon="🏢"
                         title="Proveedores"
-                        value={mockDashboardData.summary.activeSuppliers}
+                        value={suppliers.filter((s: any) => s.active).length}
                         color="pink"
                     />
                 </div>
@@ -364,7 +369,6 @@ const Dashboard = () => {
                         {/* Centro: Descontar Stock Rápido (ocupa dos filas) */}
                         <div className="p-8 bg-white rounded-lg shadow border flex flex-col items-center justify-center row-span-2 col-start-2 min-h-[260px]">
                             <div className="text-5xl mb-4">🔻</div>
-                            <div className="text-lg font-medium text-gray-700 mb-4">Descontar Stock Rápido</div>
                             <div className="w-full max-w-xs">
                                 <QuickStockOutForm />
                             </div>
@@ -378,7 +382,7 @@ const Dashboard = () => {
                             <div className="text-lg font-medium text-gray-700">Generar Reporte</div>
                         </button>
                         <button
-                            onClick={() => alert('Funcionalidad a implementar. Próxima mejora.')}
+                            onClick={() => setShowContactSupplierModal(true)}
                             className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-2 col-start-3"
                         >
                             <div className="text-5xl mb-4">📞</div>
@@ -391,7 +395,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
                     {/* Gráficos */}
                     <div className="lg:col-span-2">
-                        <StockCharts products={products} categories={categories} movements={movements} />
+                        <StockCharts products={products} categories={categories} movements={movements} suppliers={suppliers} />
                     </div>
 
                     {/* Métricas de rendimiento */}
@@ -547,6 +551,11 @@ const Dashboard = () => {
                     onClose={() => setShowCategoryModal(false)}
                     category={null}
                     onSubmit={handleCategorySubmit}
+                />
+                <ContactSupplierModal
+                    show={showContactSupplierModal}
+                    onClose={() => setShowContactSupplierModal(false)}
+                    suppliers={suppliers}
                 />
                 {/* Optional: show error/loading for modals */}
                 {modalLoading && <div className="fixed inset-0 flex items-center justify-center z-50"><div className="bg-white p-4 rounded shadow">Guardando...</div></div>}

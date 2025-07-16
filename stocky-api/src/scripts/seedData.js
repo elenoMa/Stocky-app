@@ -8,6 +8,8 @@ console.log('⏩ Importando Category...');
 import Category from '../models/Category.js';
 console.log('⏩ Importando Movement...');
 import Movement from '../models/Movement.js';
+console.log('⏩ Importando Supplier...');
+import Supplier from '../models/Supplier.js';
 
 dotenv.config();
 
@@ -19,6 +21,63 @@ const sampleCategories = [
   { name: 'Hogar', description: 'Artículos para el hogar', color: '#10B981' },
   { name: 'Deportes', description: 'Equipamiento deportivo', color: '#F59E0B' },
   { name: 'Libros', description: 'Libros y material educativo', color: '#8B5CF6' }
+];
+
+const sampleSuppliers = [
+  {
+    name: 'HP Inc.',
+    email: 'contacto@hp.com',
+    phone: '+1 800-123-4567',
+    address: '1501 Page Mill Rd, Palo Alto, CA',
+    contactPerson: 'Ana Martínez',
+    notes: 'Proveedor principal de laptops',
+    active: true
+  },
+  {
+    name: 'Samsung Electronics',
+    email: 'ventas@samsung.com',
+    phone: '+82 2-2255-0114',
+    address: '129 Samsung-ro, Suwon-si, Corea',
+    contactPerson: 'Jin Park',
+    notes: 'Proveedor de smartphones',
+    active: true
+  },
+  {
+    name: 'TextilCorp',
+    email: 'info@textilcorp.com',
+    phone: '+54 11 5555-1234',
+    address: 'Av. Siempre Viva 123, Buenos Aires',
+    contactPerson: 'Lucía Gómez',
+    notes: '',
+    active: true
+  },
+  {
+    name: 'MueblesPro',
+    email: 'ventas@mueblespro.com',
+    phone: '+34 91 123 4567',
+    address: 'Calle Falsa 456, Madrid',
+    contactPerson: 'Carlos Ruiz',
+    notes: 'Proveedor de muebles',
+    active: false
+  },
+  {
+    name: 'DeportesMax',
+    email: 'contacto@deportesmax.com',
+    phone: '+34 93 987 6543',
+    address: 'Carrer Esport 10, Barcelona',
+    contactPerson: 'Marta Serra',
+    notes: '',
+    active: true
+  },
+  {
+    name: 'EditorialTech',
+    email: 'editorial@tech.com',
+    phone: '+34 91 222 3333',
+    address: 'Calle Libros 789, Madrid',
+    contactPerson: 'Pedro López',
+    notes: 'Editorial de libros técnicos',
+    active: true
+  }
 ];
 
 const sampleProducts = [
@@ -102,6 +161,8 @@ const seedData = async () => {
     // Limpiar datos existentes
     console.log('🧹 Eliminando categorías existentes...');
     await Category.deleteMany({});
+    console.log('🧹 Eliminando proveedores existentes...');
+    await Supplier.deleteMany({});
     console.log('🧹 Eliminando productos existentes...');
     await Product.deleteMany({});
     console.log('🧹 Eliminando movimientos existentes...');
@@ -117,11 +178,21 @@ const seedData = async () => {
     });
     console.log(`✅ ${createdCategories.length} categorías creadas`);
 
-    // Crear productos usando el _id de la categoría
+    // Crear proveedores
+    console.log('📦 Insertando proveedores...');
+    const createdSuppliers = await Supplier.insertMany(sampleSuppliers);
+    const supplierMap = {};
+    createdSuppliers.forEach(sup => {
+      supplierMap[sup.name] = sup._id;
+    });
+    console.log(`✅ ${createdSuppliers.length} proveedores creados`);
+
+    // Crear productos usando el _id de la categoría y el _id del proveedor
     console.log('📦 Insertando productos...');
     const productsToInsert = sampleProducts.map(prod => ({
       ...prod,
-      category: categoryMap[prod.category]
+      category: categoryMap[prod.category],
+      supplier: supplierMap[prod.supplier] || undefined
     }));
     const createdProducts = await Product.insertMany(productsToInsert);
     console.log(`✅ ${createdProducts.length} productos creados`);

@@ -5,6 +5,7 @@ import Products from "../pages/Products";
 import Movements from "../pages/Movements";
 import Categories from "../pages/Categories";
 import Users from "../pages/Users";
+import Suppliers from "../pages/Suppliers";
 import ProtectedRoute from "./ProtectedRoute";
 
 export default function AppRouter() {
@@ -18,6 +19,7 @@ export default function AppRouter() {
                 <Route path="/movements" element={<ProtectedRoute><Movements /></ProtectedRoute>} />
                 <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
                 <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+                <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     )

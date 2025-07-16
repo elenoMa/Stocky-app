@@ -6,7 +6,7 @@ export interface Product {
     price: number
     minStock: number
     maxStock: number
-    supplier: string
+    supplier: string | { _id: string, name: string, active?: boolean } | null
     sku: string
     description?: string
     lastUpdated: string

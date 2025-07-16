@@ -27,6 +27,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         { name: 'Productos', href: '/products', icon: '📦' },
         { name: 'Movimientos', href: '/movements', icon: '📊' },
         { name: 'Categorías', href: '/categories', icon: '📁' },
+        { name: 'Proveedores', href: '/suppliers', icon: '🏭' },
     ]
 
     const isActive = (path: string) => {

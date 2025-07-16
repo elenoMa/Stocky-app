@@ -34,9 +34,9 @@ const productSchema = new mongoose.Schema({
     min: 0
   },
   supplier: {
-    type: String,
-    required: true,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier',
+    required: false
   },
   sku: {
     type: String,

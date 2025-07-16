@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import DashboardLayout from "../components/DashboardLayout ";
+import DashboardLayout from "../components/DashboardLayout";
 import StatsCard from "../components/StatsCard";
 import SearchBar from "../components/SearchBar";
 import { fetchUsers, createUser, updateUser, deleteUser } from "../services/api";

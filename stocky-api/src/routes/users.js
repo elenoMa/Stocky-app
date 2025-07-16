@@ -1,11 +1,11 @@
 import express from 'express';
 import { listUsers, createUser, updateUser, deleteUser } from '../controllers/userController.js';
-import { authMiddleware } from '../middlewares/authMiddleware.js';
-import { adminMiddleware } from '../middlewares/adminMiddleware.js';
+import auth from '../middlewares/authMiddleware.js';
+import admin from '../middlewares/adminMiddleware.js';
 
 const router = express.Router();
 
-router.use(authMiddleware, adminMiddleware);
+router.use(auth, admin);
 
 router.get('/', listUsers);
 router.post('/', createUser);

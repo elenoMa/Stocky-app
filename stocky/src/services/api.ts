@@ -1,4 +1,5 @@
 import type { Product, ProductFormData } from '../types/product';
+import type { Supplier } from '../types/supplier';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -193,4 +194,49 @@ const deleteUser = async (id: string) => {
     return res.json();
 }
 
-export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser };
+const fetchSuppliers = async () => {
+    const res = await fetch(`${API_URL}/suppliers`, {
+        headers: buildHeaders()
+    });
+    if (!res.ok) {
+        throw new Error('Failed to fetch suppliers');
+    }
+    return res.json();
+}
+
+const createSupplier = async (supplier: Partial<Supplier>) => {
+    const res = await fetch(`${API_URL}/suppliers`, {
+        method: 'POST',
+        headers: buildHeaders(),
+        body: JSON.stringify(supplier)
+    });
+    if (!res.ok) {
+        throw new Error('Error al crear proveedor');
+    }
+    return res.json();
+}
+
+const updateSupplier = async (id: string, supplier: Partial<Supplier>) => {
+    const res = await fetch(`${API_URL}/suppliers/${id}`, {
+        method: 'PUT',
+        headers: buildHeaders(),
+        body: JSON.stringify(supplier)
+    });
+    if (!res.ok) {
+        throw new Error('Error al actualizar proveedor');
+    }
+    return res.json();
+}
+
+const deleteSupplier = async (id: string) => {
+    const res = await fetch(`${API_URL}/suppliers/${id}`, {
+        method: 'DELETE',
+        headers: buildHeaders(false)
+    });
+    if (!res.ok) {
+        throw new Error('Error al eliminar proveedor');
+    }
+    return res.json();
+}
+
+export { fetchProducts, fetchCategories, fetchMovements, fetchRecentMovements, createProduct, updateProduct, deleteProduct, createMovement, fetchMovementsTotal, fetchMovementsStats, createCategory, updateCategory, deleteCategory, fetchUsers, createUser, updateUser, deleteUser, fetchSuppliers, createSupplier, updateSupplier, deleteSupplier };
