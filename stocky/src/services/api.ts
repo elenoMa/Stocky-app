@@ -1,5 +1,6 @@
 import type { Product, ProductFormData } from '../types/product';
 import type { Supplier } from '../types/supplier';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -15,8 +16,42 @@ function buildHeaders(contentType = true) {
   return headers;
 }
 
+// Wrapper para manejar refresh automático
+async function fetchWithAuth(input: RequestInfo, init?: RequestInit, retry = true): Promise<Response> {
+  let token = getToken();
+  let headers = (init?.headers as Record<string, string>) || {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(input, { ...init, headers });
+    if (res.status !== 401 || !retry) return res;
+    // Intentar refresh
+    const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!refreshRes.ok) {
+      // refresh falló, sesión expirada
+      alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      window.location.href = '/login';
+      throw new Error('Sesión expirada');
+    }
+    const data = await refreshRes.json();
+    token = data.token;
+    if (localStorage.getItem('token')) {
+      localStorage.setItem('token', token || '');
+    } else {
+      sessionStorage.setItem('token', token || '');
+    }
+    // Reintentar petición original con nuevo token
+    headers['Authorization'] = `Bearer ${token}`;
+    return fetch(input, { ...init, headers });
+  } catch (err) {
+    throw err;
+  }
+}
+
 const fetchProducts = async () => {
-    const res = await fetch(`${API_URL}/products`, {
+    const res = await fetchWithAuth(`${API_URL}/products`, {
         headers: buildHeaders()
     });
     if (!res.ok) {
@@ -26,7 +61,7 @@ const fetchProducts = async () => {
 }
 
 const fetchCategories = async () => {
-    const res = await fetch(`${API_URL}/categories`, {
+    const res = await fetchWithAuth(`${API_URL}/categories`, {
         headers: buildHeaders()
     });
     if (!res.ok) {
@@ -35,9 +70,8 @@ const fetchCategories = async () => {
     return res.json();
 }
 
-
 const fetchMovements = async () => {
-    const res = await fetch(`${API_URL}/movements?limit=1000`, {
+    const res = await fetchWithAuth(`${API_URL}/movements?limit=1000`, {
         headers: buildHeaders()
     });
     if (!res.ok) throw new Error("Error al obtener los movimientos");
@@ -45,7 +79,7 @@ const fetchMovements = async () => {
 }
 
 const fetchRecentMovements = async () => {
-    const res = await fetch(`${API_URL}/movements/recent`, {
+    const res = await fetchWithAuth(`${API_URL}/movements/recent`, {
         headers: buildHeaders()
     });
     if (!res.ok) throw new Error('Error al obtener movimientos recientes');
@@ -53,7 +87,7 @@ const fetchRecentMovements = async () => {
 }
 
 const fetchMovementsTotal = async () => {
-    const res = await fetch(`${API_URL}/movements?limit=1`, {
+    const res = await fetchWithAuth(`${API_URL}/movements?limit=1`, {
         headers: buildHeaders()
     });
     if (!res.ok) throw new Error("Error al obtener el total de movimientos");
@@ -63,7 +97,7 @@ const fetchMovementsTotal = async () => {
 }
 
 const createProduct = async (product: ProductFormData) => {
-    const res = await fetch(`${API_URL}/products`, {
+    const res = await fetchWithAuth(`${API_URL}/products`, {
         method: 'POST',
         headers: buildHeaders(),
         body: JSON.stringify(product)
@@ -75,7 +109,7 @@ const createProduct = async (product: ProductFormData) => {
 }
 
 const updateProduct = async (id: string, product: Partial<ProductFormData>) => {
-    const res = await fetch(`${API_URL}/products/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/products/${id}`, {
         method: 'PUT',
         headers: buildHeaders(),
         body: JSON.stringify(product)
@@ -87,7 +121,7 @@ const updateProduct = async (id: string, product: Partial<ProductFormData>) => {
 }
 
 const deleteProduct = async (id: string) => {
-    const res = await fetch(`${API_URL}/products/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/products/${id}`, {
         method: 'DELETE',
         headers: buildHeaders(false)
     });
@@ -98,7 +132,7 @@ const deleteProduct = async (id: string) => {
 }
 
 const createMovement = async (movement: any) => {
-    const res = await fetch(`${API_URL}/movements`, {
+    const res = await fetchWithAuth(`${API_URL}/movements`, {
         method: 'POST',
         headers: buildHeaders(),
         body: JSON.stringify(movement)
@@ -110,7 +144,7 @@ const createMovement = async (movement: any) => {
 }
 
 const fetchMovementsStats = async () => {
-    const res = await fetch(`${API_URL}/movements/stats`, {
+    const res = await fetchWithAuth(`${API_URL}/movements/stats`, {
         headers: buildHeaders()
     });
     if (!res.ok) throw new Error("Error al obtener estadísticas de movimientos");
@@ -118,7 +152,7 @@ const fetchMovementsStats = async () => {
 }
 
 const createCategory = async (category: { name: string; description?: string; color?: string }) => {
-    const res = await fetch(`${API_URL}/categories`, {
+    const res = await fetchWithAuth(`${API_URL}/categories`, {
         method: 'POST',
         headers: buildHeaders(),
         body: JSON.stringify(category)
@@ -128,7 +162,7 @@ const createCategory = async (category: { name: string; description?: string; co
 }
 
 const updateCategory = async (id: string, category: { name: string; description?: string; color?: string }) => {
-    const res = await fetch(`${API_URL}/categories/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/categories/${id}`, {
         method: 'PUT',
         headers: buildHeaders(),
         body: JSON.stringify(category)
@@ -138,7 +172,7 @@ const updateCategory = async (id: string, category: { name: string; description?
 }
 
 const deleteCategory = async (id: string) => {
-    const res = await fetch(`${API_URL}/categories/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/categories/${id}`, {
         method: 'DELETE',
         headers: buildHeaders(false)
     });
@@ -147,7 +181,7 @@ const deleteCategory = async (id: string) => {
 }
 
 const fetchUsers = async () => {
-    const res = await fetch(`${API_URL}/users`, {
+    const res = await fetchWithAuth(`${API_URL}/users`, {
         headers: buildHeaders()
     });
     if (!res.ok) {
@@ -157,7 +191,7 @@ const fetchUsers = async () => {
 }
 
 const createUser = async (user: { username: string; email: string; password: string; role: string }) => {
-    const res = await fetch(`${API_URL}/users`, {
+    const res = await fetchWithAuth(`${API_URL}/users`, {
         method: 'POST',
         headers: buildHeaders(),
         body: JSON.stringify(user)
@@ -170,7 +204,7 @@ const createUser = async (user: { username: string; email: string; password: str
 }
 
 const updateUser = async (id: string, user: { username?: string; email?: string; password?: string; role?: string }) => {
-    const res = await fetch(`${API_URL}/users/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/users/${id}`, {
         method: 'PUT',
         headers: buildHeaders(),
         body: JSON.stringify(user)
@@ -183,7 +217,7 @@ const updateUser = async (id: string, user: { username?: string; email?: string;
 }
 
 const deleteUser = async (id: string) => {
-    const res = await fetch(`${API_URL}/users/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/users/${id}`, {
         method: 'DELETE',
         headers: buildHeaders(false)
     });
@@ -195,7 +229,7 @@ const deleteUser = async (id: string) => {
 }
 
 const fetchSuppliers = async () => {
-    const res = await fetch(`${API_URL}/suppliers`, {
+    const res = await fetchWithAuth(`${API_URL}/suppliers`, {
         headers: buildHeaders()
     });
     if (!res.ok) {
@@ -205,7 +239,7 @@ const fetchSuppliers = async () => {
 }
 
 const createSupplier = async (supplier: Partial<Supplier>) => {
-    const res = await fetch(`${API_URL}/suppliers`, {
+    const res = await fetchWithAuth(`${API_URL}/suppliers`, {
         method: 'POST',
         headers: buildHeaders(),
         body: JSON.stringify(supplier)
@@ -217,7 +251,7 @@ const createSupplier = async (supplier: Partial<Supplier>) => {
 }
 
 const updateSupplier = async (id: string, supplier: Partial<Supplier>) => {
-    const res = await fetch(`${API_URL}/suppliers/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/suppliers/${id}`, {
         method: 'PUT',
         headers: buildHeaders(),
         body: JSON.stringify(supplier)
@@ -229,7 +263,7 @@ const updateSupplier = async (id: string, supplier: Partial<Supplier>) => {
 }
 
 const deleteSupplier = async (id: string) => {
-    const res = await fetch(`${API_URL}/suppliers/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/suppliers/${id}`, {
         method: 'DELETE',
         headers: buildHeaders(false)
     });
@@ -240,7 +274,7 @@ const deleteSupplier = async (id: string) => {
 }
 
 const fetchTopSellingProducts = async (limit = 5) => {
-    const res = await fetch(`${API_URL}/movements/top-selling?limit=${limit}`, {
+    const res = await fetchWithAuth(`${API_URL}/movements/top-selling?limit=${limit}`, {
         headers: buildHeaders()
     });
     if (!res.ok) throw new Error('Error al obtener productos más vendidos');

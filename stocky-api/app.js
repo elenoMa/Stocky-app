@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './src/config/database.js';
 import auth from './src/middlewares/authMiddleware.js';
+import cookieParser from 'cookie-parser';
 
 // Importar rutas
 import productRoutes from './src/routes/products.js';
@@ -20,6 +21,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 3000;
 

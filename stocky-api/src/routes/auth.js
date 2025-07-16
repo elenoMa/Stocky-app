@@ -9,4 +9,7 @@ router.post('/register', authController.register);
 // Login de usuario
 router.post('/login', authController.login);
 
+// Refresh token
+router.post('/refresh', authController.refreshToken);
+
 export default router; 

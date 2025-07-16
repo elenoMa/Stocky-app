@@ -1,17 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
-    // Simular verificación asíncrona (puedes reemplazar por una real si tienes refresh de token)
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    setTimeout(() => {
-      setIsAuth(!!token);
+    const checkAuth = async () => {
+      let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        setIsAuth(false);
+        setChecking(false);
+        return;
+      }
+      if (isTokenExpired(token || '')) {
+        // Intentar refrescar el token
+        try {
+          const res = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            token = data.token;
+            // Guardar el nuevo token donde estaba el anterior
+            if (localStorage.getItem('token')) {
+              localStorage.setItem('token', token || '');
+            } else {
+              sessionStorage.setItem('token', token || '');
+            }
+            setIsAuth(true);
+          } else {
+            setIsAuth(false);
+          }
+        } catch {
+          setIsAuth(false);
+        }
+        setChecking(false);
+        return;
+      }
+      setIsAuth(true);
       setChecking(false);
-    }, 400); // 400ms de "carga"
+    };
+    checkAuth();
   }, []);
 
   if (checking) {
