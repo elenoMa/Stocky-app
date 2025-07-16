@@ -596,8 +596,8 @@ const Dashboard = () => {
 
                     {/* Modal de alertas de stock */}
                     {showStockAlertsModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+                            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative animate-modal-in">
                                 <button
                                     className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl"
                                     onClick={() => setShowStockAlertsModal(false)}
@@ -606,6 +606,15 @@ const Dashboard = () => {
                                 </button>
                                 <StockAlertsPanel alerts={lowStockAlerts} />
                             </div>
+                            <style>{`
+                                @keyframes modal-in {
+                                    0% { opacity: 0; transform: scale(0.95); }
+                                    100% { opacity: 1; transform: scale(1); }
+                                }
+                                .animate-modal-in {
+                                    animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                                }
+                            `}</style>
                         </div>
                     )}
                 </div>

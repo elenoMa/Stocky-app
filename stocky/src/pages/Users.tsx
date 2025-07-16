@@ -255,8 +255,8 @@ const Users: React.FC = () => {
           </div>
           {/* Modal de creación de usuario */}
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+              <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-sm relative animate-modal-in">
                 <h3 className="text-lg font-bold mb-4">Crear nuevo usuario</h3>
                 <form onSubmit={handleCreateUser} className="space-y-4">
                   <div>
@@ -322,12 +322,21 @@ const Users: React.FC = () => {
                   </div>
                 </form>
               </div>
+              <style>{`
+                @keyframes modal-in {
+                  0% { opacity: 0; transform: scale(0.95); }
+                  100% { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-in {
+                  animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                }
+              `}</style>
             </div>
           )}
           {/* Modal de edición de usuario */}
           {showEditModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+              <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-sm relative animate-modal-in">
                 <h3 className="text-lg font-bold mb-4">Editar usuario</h3>
                 <form onSubmit={handleEditUser} className="space-y-4">
                   <div>
@@ -394,12 +403,21 @@ const Users: React.FC = () => {
                   </div>
                 </form>
               </div>
+              <style>{`
+                @keyframes modal-in {
+                  0% { opacity: 0; transform: scale(0.95); }
+                  100% { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-in {
+                  animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                }
+              `}</style>
             </div>
           )}
           {/* Modal de confirmación de eliminación */}
           {showDeleteModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-sm text-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+              <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-sm text-center relative animate-modal-in">
                 <h3 className="text-lg font-bold mb-4 text-red-600">¿Eliminar usuario?</h3>
                 <p className="mb-4">¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
                 {deleteError && <div className="text-red-600 text-sm mb-2">{deleteError}</div>}
@@ -422,6 +440,15 @@ const Users: React.FC = () => {
                   </button>
                 </div>
               </div>
+              <style>{`
+                @keyframes modal-in {
+                  0% { opacity: 0; transform: scale(0.95); }
+                  100% { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-in {
+                  animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                }
+              `}</style>
             </div>
           )}
         </div>

@@ -21,8 +21,8 @@ const ContactSupplierModal: React.FC<ContactSupplierModalProps> = ({ show, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative animate-modal-in">
         <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl" onClick={onClose}>
           ×
         </button>
@@ -92,6 +92,15 @@ const ContactSupplierModal: React.FC<ContactSupplierModalProps> = ({ show, onClo
           </button>
         </div>
       </div>
+      <style>{`
+        @keyframes modal-in {
+          0% { opacity: 0; transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal-in {
+          animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+        }
+      `}</style>
     </div>
   );
 };

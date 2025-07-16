@@ -72,8 +72,8 @@ const ProductFormModal = ({ show, onClose, product, onSubmit, suppliers }: Produ
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative animate-modal-in">
                 <h2 className="text-xl font-bold mb-4">
                     {product ? '✏️ Editar Producto' : '➕ Nuevo Producto'}
                 </h2>
@@ -211,6 +211,15 @@ const ProductFormModal = ({ show, onClose, product, onSubmit, suppliers }: Produ
                     </div>
                 </form>
             </div>
+            <style>{`
+                @keyframes modal-in {
+                    0% { opacity: 0; transform: scale(0.95); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-in {
+                    animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                }
+            `}</style>
         </div>
     )
 }
