@@ -23,9 +23,11 @@ export interface MovementStats {
 }
 
 export interface QuickMovementData {
+    productId: string
     type: 'entrada' | 'salida'
-    product: string
     quantity: number
     reason: string
+    user: string
+    cost?: number
     notes?: string
 } 

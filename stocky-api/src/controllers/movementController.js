@@ -1,5 +1,6 @@
 import Movement from '../models/Movement.js';
 import Product from '../models/Product.js';
+import Category from '../models/Category.js';
 
 // Obtener todos los movimientos
 export const getMovements = async (req, res) => {
@@ -33,6 +34,9 @@ export const getMovements = async (req, res) => {
 
     const total = await Movement.countDocuments(filters);
 
+    // Log de los movimientos para depuración
+    console.log('Movements encontrados:', JSON.stringify(movements, null, 2));
+
     res.json({
       movements,
       pagination: {
@@ -43,6 +47,7 @@ export const getMovements = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error en getMovements:', error);
     res.status(500).json({ message: 'Error al obtener movimientos', error: error.message });
   }
 };
@@ -71,6 +76,15 @@ export const createMovement = async (req, res) => {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }
 
+    // Buscar el nombre de la categoría manualmente
+    let categoryName = product.category;
+    if (product.category) {
+      const categoryDoc = await Category.findById(product.category);
+      if (categoryDoc) {
+        categoryName = categoryDoc.name;
+      }
+    }
+
     const previousStock = product.stock;
     let newStock;
 
@@ -90,7 +104,7 @@ export const createMovement = async (req, res) => {
     const movement = new Movement({
       productId,
       productName: product.name,
-      category: product.category,
+      category: categoryName,
       type,
       quantity,
       previousStock,

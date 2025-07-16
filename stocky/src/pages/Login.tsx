@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 interface LoginForm {
-    email: string
+    username: string
     password: string
     rememberMe: boolean
 }
@@ -10,60 +10,68 @@ interface LoginForm {
 const Login = () => {
     const navigate = useNavigate()
     const [formData, setFormData] = useState<LoginForm>({
-        email: '',
+        username: '',
         password: '',
         rememberMe: false
     })
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [errors, setErrors] = useState<Partial<LoginForm>>({})
+    const [apiError, setApiError] = useState<string | null>(null)
 
     const handleInputChange = (field: keyof LoginForm, value: string | boolean) => {
         setFormData(prev => ({ ...prev, [field]: value }))
-        // Limpiar error del campo cuando el usuario empiece a escribir
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: undefined }))
         }
+        if (apiError) setApiError(null)
     }
 
     const validateForm = (): boolean => {
         const newErrors: Partial<LoginForm> = {}
-
-        if (!formData.email) {
-            newErrors.email = 'El email es requerido'
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'El email no es válido'
+        if (!formData.username) {
+            newErrors.username = 'El usuario es requerido'
         }
-
         if (!formData.password) {
             newErrors.password = 'La contraseña es requerida'
-        } else if (formData.password.length < 6) {
-            newErrors.password = 'La contraseña debe tener al menos 6 caracteres'
+        } else if (formData.password.length < 3) {
+            newErrors.password = 'La contraseña debe tener al menos 3 caracteres'
         }
-
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
         if (!validateForm()) return
-
         setIsLoading(true)
-        
+        setApiError(null)
         try {
-            // Simular llamada a API
-            await new Promise(resolve => setTimeout(resolve, 1500))
-            
-            // Aquí iría la lógica real de autenticación
-            console.log('Login exitoso:', formData)
-            
-            // Redirigir al dashboard
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.username,
+                    password: formData.password
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                setApiError(data.message || 'Error en login')
+                setIsLoading(false)
+                return
+            }
+            // Guardar token y usuario
+            if (formData.rememberMe) {
+                localStorage.setItem('token', data.token)
+                localStorage.setItem('user', JSON.stringify(data.user))
+            } else {
+                sessionStorage.setItem('token', data.token)
+                sessionStorage.setItem('user', JSON.stringify(data.user))
+            }
             navigate('/dashboard')
         } catch (error) {
-            console.error('Error en login:', error)
-            setErrors({ password: 'Credenciales incorrectas' })
+            setApiError('Error de red o del servidor')
         } finally {
             setIsLoading(false)
         }
@@ -71,8 +79,8 @@ const Login = () => {
 
     const handleDemoLogin = () => {
         setFormData({
-            email: 'admin@stocky.com',
-            password: '123456',
+            username: 'admin',
+            password: 'admin123',
             rememberMe: false
         })
     }
@@ -96,24 +104,24 @@ const Login = () => {
                 {/* Formulario de login */}
                 <div className="bg-white rounded-xl shadow-lg p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Email */}
+                        {/* Usuario */}
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                                📧 Correo Electrónico
+                            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                                👤 Usuario
                             </label>
                             <input
-                                id="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                id="username"
+                                type="text"
+                                value={formData.username}
+                                onChange={(e) => handleInputChange('username', e.target.value)}
                                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                                    errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                                    errors.username ? 'border-red-300 bg-red-50' : 'border-gray-300'
                                 }`}
-                                placeholder="tu@email.com"
+                                placeholder="Tu usuario"
                                 disabled={isLoading}
                             />
-                            {errors.email && (
-                                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                            {errors.username && (
+                                <p className="mt-1 text-sm text-red-600">{errors.username}</p>
                             )}
                         </div>
 
@@ -171,6 +179,13 @@ const Login = () => {
                                 ¿Olvidaste tu contraseña?
                             </button>
                         </div>
+
+                        {/* Error de API */}
+                        {apiError && (
+                            <div className="bg-red-100 text-red-700 p-2 rounded text-center text-sm">
+                                {apiError}
+                            </div>
+                        )}
 
                         {/* Botón de login */}
                         <button

@@ -3,9 +3,10 @@ interface StatsCardProps {
     title: string
     value: string | number
     color: 'blue' | 'green' | 'yellow' | 'purple' | 'red' | 'pink'
+    onClick?: () => void
 }
 
-const StatsCard = ({ icon, title, value, color }: StatsCardProps) => {
+const StatsCard = ({ icon, title, value, color, onClick }: StatsCardProps) => {
     const colorClasses = {
         blue: 'bg-blue-100 text-blue-600',
         green: 'bg-green-100 text-green-600',
@@ -16,7 +17,10 @@ const StatsCard = ({ icon, title, value, color }: StatsCardProps) => {
     }
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow border">
+        <div
+            className={`bg-white p-4 rounded-lg shadow border ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+            onClick={onClick}
+        >
             <div className="flex items-center">
                 <div className={`p-2 ${colorClasses[color]} rounded-lg`}>
                     <span className="text-xl">{icon}</span>

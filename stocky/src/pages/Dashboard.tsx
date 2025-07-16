@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import DashboardLayout from "../components/DashboardLayout "
 import SummaryCards from "../components/SummaryCards";
 import StockAlertsPanel from "../components/StockAlertsPanel";
@@ -6,6 +6,15 @@ import QuickStockOutForm from "../components/QuickStockOutForm";
 import StockCharts from "../components/StockCharts";
 import RecentMovementsTable from "../components/RecentMovementsTable";
 import StatsCard from '../components/StatsCard'
+import { fetchProducts, fetchMovements, fetchCategories, fetchMovementsStats } from '../services/api'
+import { calculateProductStats } from '../utils/productUtils'
+import { calculateMovementStats } from '../utils/movementUtils'
+import ProductFormModal from '../components/ProductFormModal';
+import QuickMovementModal from '../components/QuickMovementModal';
+import { createProduct, createMovement, createCategory } from '../services/api';
+import type { ProductFormData } from '../types/product';
+import type { QuickMovementData } from '../types/movement';
+import CategoryFormModal from '../components/CategoryFormModal';
 
 // Datos mock más realistas
 const mockDashboardData = {
@@ -65,6 +74,66 @@ const mockDashboardData = {
 const Dashboard = () => {
     const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('week')
     const [showNotifications, setShowNotifications] = useState(false)
+    const [products, setProducts] = useState([])
+    const [movements, setMovements] = useState([])
+    const [categories, setCategories] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [showQuickMovementModal, setShowQuickMovementModal] = useState(false);
+    const [modalLoading, setModalLoading] = useState(false);
+    const [modalError, setModalError] = useState<string | null>(null);
+    const [performanceMetrics, setPerformanceMetrics] = useState({
+        stockTurnover: 0,
+        averageOrderValue: 0,
+        supplierPerformance: null,
+        inventoryAccuracy: null
+    });
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showStockAlertsModal, setShowStockAlertsModal] = useState(false);
+
+    // Hoist loadData so it can be used by modals and useEffect
+    const loadData = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const productsData = await fetchProducts()
+            const movementsData = await fetchMovements()
+            const categoriesData = await fetchCategories()
+            const movementStats = await fetchMovementsStats();
+            // Forzar conversión de campos numéricos
+            const products = (productsData.products || productsData).map((p: any) => ({
+                ...p,
+                stock: Number(p.stock),
+                price: Number(p.price),
+                minStock: Number(p.minStock),
+                maxStock: Number(p.maxStock),
+                status: p.status || 'active'
+            }))
+            setProducts(products)
+            setMovements(movementsData.movements || movementsData)
+            setCategories(categoriesData.categories || categoriesData)
+            // Calcular métricas de rendimiento reales
+            const stockTurnover = products.length > 0 ? parseFloat((movementStats.totalMovements / products.length).toFixed(2)) : 0;
+            const averageOrderValue = products.length > 0 ? parseFloat((products.reduce((sum: number, p: any) => sum + p.price, 0) / products.length).toFixed(2)) : 0;
+            setPerformanceMetrics({
+                stockTurnover,
+                averageOrderValue,
+                supplierPerformance: null, // No disponible
+                inventoryAccuracy: null // No disponible
+            });
+        } catch (err: any) {
+            setError('Error al cargar datos del dashboard')
+        } finally {
+            setLoading(false)
+        }
+    }
+    useEffect(() => {
+        loadData()
+    }, [])
+
+    const productStats = calculateProductStats(products)
+    const movementStats = calculateMovementStats(movements)
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
@@ -114,8 +183,91 @@ const Dashboard = () => {
     }
 
     const handleQuickAction = (action: string) => {
-        console.log('Acción rápida:', action)
-        // Aquí se implementarían las acciones específicas
+        if (action === 'add-product') {
+            setShowProductModal(true);
+        } else if (action === 'quick-movement') {
+            setShowQuickMovementModal(true);
+        } else {
+            // Placeholder for other actions
+            console.log('Acción rápida:', action)
+        }
+    }
+
+    // Product creation handler
+    const handleProductSubmit = async (data: ProductFormData) => {
+        setModalLoading(true);
+        setModalError(null);
+        try {
+            // Convertir campos numéricos a number
+            const payload = {
+                ...data,
+                stock: Number(data.stock),
+                price: Number(data.price),
+                minStock: Number(data.minStock),
+                maxStock: Number(data.maxStock)
+            };
+            await createProduct(payload);
+            await loadData();
+            setShowProductModal(false);
+        } catch (err: any) {
+            let msg = 'Error al crear producto';
+            if (err instanceof Error && err.message) {
+                try {
+                    // Intentar extraer mensaje del backend
+                    const json = JSON.parse(err.message);
+                    if (json && json.message) msg = json.message;
+                } catch {
+                    // Si no es JSON, usar el mensaje tal cual
+                    msg = err.message;
+                }
+            }
+            setModalError(msg);
+        } finally {
+            setModalLoading(false);
+        }
+    }
+
+    // Movement creation handler
+    const handleQuickMovementSubmit = async (data: QuickMovementData) => {
+        setModalLoading(true);
+        setModalError(null);
+        try {
+            await createMovement(data);
+            await loadData();
+            setShowQuickMovementModal(false);
+        } catch (err: any) {
+            setModalError('Error al crear movimiento');
+        } finally {
+            setModalLoading(false);
+        }
+    }
+
+    // Category creation handler
+    const handleCategorySubmit = async (data: { name: string; description: string; color: string }) => {
+        try {
+            await createCategory(data);
+            await loadData();
+            setShowCategoryModal(false);
+        } catch (err) {
+            alert('Error al crear la categoría');
+        }
+    };
+
+    // Calcular productos en bajo stock
+    const lowStockAlerts = useMemo(() =>
+        products.filter((p: any) => p.stock <= p.minStock).map((p: any) => ({
+            name: p.name,
+            stock: p.stock,
+            minStock: p.minStock
+        })),
+        [products]
+    );
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64">Cargando dashboard...</div>
+    }
+    if (error) {
+        return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
     }
 
     return (
@@ -126,49 +278,6 @@ const Dashboard = () => {
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800">🏠 Dashboard</h1>
                         <p className="text-gray-600 mt-1">Vista general de tu inventario y actividad reciente</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                            🔔
-                            {mockDashboardData.notifications.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                    {mockDashboardData.notifications.length}
-                                </span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setSelectedPeriod('today')}
-                            className={`px-4 py-2 rounded-lg border transition-colors ${
-                                selectedPeriod === 'today' 
-                                    ? 'bg-blue-600 text-white border-blue-600' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                            }`}
-                        >
-                            Hoy
-                        </button>
-                        <button
-                            onClick={() => setSelectedPeriod('week')}
-                            className={`px-4 py-2 rounded-lg border transition-colors ${
-                                selectedPeriod === 'week' 
-                                    ? 'bg-blue-600 text-white border-blue-600' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                            }`}
-                        >
-                            Esta Semana
-                        </button>
-                        <button
-                            onClick={() => setSelectedPeriod('month')}
-                            className={`px-4 py-2 rounded-lg border transition-colors ${
-                                selectedPeriod === 'month' 
-                                    ? 'bg-blue-600 text-white border-blue-600' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                            }`}
-                        >
-                            Este Mes
-                        </button>
                     </div>
                 </div>
 
@@ -197,31 +306,32 @@ const Dashboard = () => {
                     <StatsCard
                         icon="📦"
                         title="Total Productos"
-                        value={mockDashboardData.summary.totalProducts}
+                        value={productStats.totalProducts}
                         color="blue"
                     />
                     <StatsCard
                         icon="⚠️"
                         title="Bajo Stock"
-                        value={mockDashboardData.summary.lowStockProducts}
+                        value={productStats.lowStockProducts}
                         color="red"
+                        onClick={() => setShowStockAlertsModal(true)}
                     />
                     <StatsCard
                         icon="📁"
                         title="Categorías"
-                        value={mockDashboardData.summary.totalCategories}
+                        value={categories.length}
                         color="green"
                     />
                     <StatsCard
                         icon="💰"
                         title="Valor Total"
-                        value={`$${mockDashboardData.summary.totalValue.toLocaleString()}`}
+                        value={`$${productStats.totalValue.toLocaleString()}`}
                         color="purple"
                     />
                     <StatsCard
                         icon="📊"
                         title="Movimientos"
-                        value={mockDashboardData.summary.monthlyMovements}
+                        value={movementStats.totalMovements}
                         color="yellow"
                     />
                     <StatsCard
@@ -235,17 +345,45 @@ const Dashboard = () => {
                 {/* Acciones rápidas */}
                 <div className="mb-8">
                     <h3 className="text-lg font-semibold mb-3">⚡ Acciones Rápidas</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {mockDashboardData.quickActions.map((action) => (
-                            <button
-                                key={action.id}
-                                onClick={() => handleQuickAction(action.action)}
-                                className="p-4 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center"
-                            >
-                                <div className="text-2xl mb-2">{action.icon}</div>
-                                <div className="text-sm font-medium text-gray-700">{action.title}</div>
-                            </button>
-                        ))}
+                    <div className="grid grid-cols-3 grid-rows-2 gap-6">
+                        {/* Columna izquierda: Nuevo Producto (arriba), Nueva Categoría (abajo) */}
+                        <button
+                            onClick={() => handleQuickAction('add-product')}
+                            className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-1 col-start-1"
+                        >
+                            <div className="text-5xl mb-4">➕</div>
+                            <div className="text-lg font-medium text-gray-700">Nuevo Producto</div>
+                        </button>
+                        <button
+                            onClick={() => setShowCategoryModal(true)}
+                            className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-2 col-start-1"
+                        >
+                            <div className="text-5xl mb-4">📂</div>
+                            <div className="text-lg font-medium text-gray-700">Nueva Categoría</div>
+                        </button>
+                        {/* Centro: Descontar Stock Rápido (ocupa dos filas) */}
+                        <div className="p-8 bg-white rounded-lg shadow border flex flex-col items-center justify-center row-span-2 col-start-2 min-h-[260px]">
+                            <div className="text-5xl mb-4">🔻</div>
+                            <div className="text-lg font-medium text-gray-700 mb-4">Descontar Stock Rápido</div>
+                            <div className="w-full max-w-xs">
+                                <QuickStockOutForm />
+                            </div>
+                        </div>
+                        {/* Columna derecha: Generar Reporte (arriba), Contactar Proveedor (abajo) */}
+                        <button
+                            onClick={() => alert('Funcionalidad a implementar. Próxima mejora.')}
+                            className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-1 col-start-3"
+                        >
+                            <div className="text-5xl mb-4">📊</div>
+                            <div className="text-lg font-medium text-gray-700">Generar Reporte</div>
+                        </button>
+                        <button
+                            onClick={() => alert('Funcionalidad a implementar. Próxima mejora.')}
+                            className="p-8 bg-white rounded-lg shadow border hover:shadow-md transition-shadow text-center flex flex-col items-center justify-center min-h-[120px] row-start-2 col-start-3"
+                        >
+                            <div className="text-5xl mb-4">📞</div>
+                            <div className="text-lg font-medium text-gray-700">Contactar Proveedor</div>
+                        </button>
                     </div>
                 </div>
 
@@ -253,7 +391,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
                     {/* Gráficos */}
                     <div className="lg:col-span-2">
-                        <StockCharts />
+                        <StockCharts products={products} categories={categories} movements={movements} />
                     </div>
 
                     {/* Métricas de rendimiento */}
@@ -263,37 +401,37 @@ const Dashboard = () => {
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-600">Rotación de Stock</span>
-                                    <span className="text-sm font-semibold">{mockDashboardData.performanceMetrics.stockTurnover}</span>
+                                    <span className="text-sm font-semibold">{performanceMetrics.stockTurnover}</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(mockDashboardData.performanceMetrics.stockTurnover / 5) * 100}%` }}></div>
+                                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.min(Number(performanceMetrics.stockTurnover) * 20, 100)}%` }}></div>
                                 </div>
                             </div>
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-600">Valor Promedio</span>
-                                    <span className="text-sm font-semibold">${mockDashboardData.performanceMetrics.averageOrderValue.toLocaleString()}</span>
+                                    <span className="text-sm font-semibold">${performanceMetrics.averageOrderValue}</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-green-600 h-2 rounded-full" style={{ width: `${(mockDashboardData.performanceMetrics.averageOrderValue / 2000) * 100}%` }}></div>
+                                    <div className="bg-green-600 h-2 rounded-full" style={{ width: `${Math.min(Number(performanceMetrics.averageOrderValue) / 20, 100)}%` }}></div>
                                 </div>
                             </div>
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-600">Rendimiento Proveedores</span>
-                                    <span className="text-sm font-semibold">{mockDashboardData.performanceMetrics.supplierPerformance}%</span>
+                                    <span className="text-sm font-semibold text-gray-400">No disponible</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${mockDashboardData.performanceMetrics.supplierPerformance}%` }}></div>
+                                    <div className="bg-purple-200 h-2 rounded-full" style={{ width: `0%` }}></div>
                                 </div>
                             </div>
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-600">Precisión Inventario</span>
-                                    <span className="text-sm font-semibold">{mockDashboardData.performanceMetrics.inventoryAccuracy}%</span>
+                                    <span className="text-sm font-semibold text-gray-400">No disponible</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-yellow-600 h-2 rounded-full" style={{ width: `${mockDashboardData.performanceMetrics.inventoryAccuracy}%` }}></div>
+                                    <div className="bg-yellow-200 h-2 rounded-full" style={{ width: `0%` }}></div>
                                 </div>
                             </div>
                         </div>
@@ -318,16 +456,6 @@ const Dashboard = () => {
                         <button className="w-full mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium">
                             Ver todas las tareas →
                         </button>
-                    </div>
-                </div>
-
-                {/* Alertas de stock y formulario rápido */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    <div className="lg:col-span-2">
-                        <StockAlertsPanel />
-                    </div>
-                    <div>
-                        <QuickStockOutForm />
                     </div>
                 </div>
 
@@ -401,6 +529,43 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Modals for quick actions */}
+                <ProductFormModal
+                    show={showProductModal}
+                    onClose={() => { setShowProductModal(false); setModalError(null); }}
+                    product={null}
+                    onSubmit={handleProductSubmit}
+                />
+                <QuickMovementModal
+                    show={showQuickMovementModal}
+                    onClose={() => { setShowQuickMovementModal(false); setModalError(null); }}
+                    onSubmit={handleQuickMovementSubmit}
+                />
+                <CategoryFormModal
+                    show={showCategoryModal}
+                    onClose={() => setShowCategoryModal(false)}
+                    category={null}
+                    onSubmit={handleCategorySubmit}
+                />
+                {/* Optional: show error/loading for modals */}
+                {modalLoading && <div className="fixed inset-0 flex items-center justify-center z-50"><div className="bg-white p-4 rounded shadow">Guardando...</div></div>}
+                {modalError && <div className="fixed inset-0 flex items-center justify-center z-50"><div className="bg-red-100 text-red-700 p-4 rounded shadow">{modalError}</div></div>}
+
+                {/* Modal de alertas de stock */}
+                {showStockAlertsModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl"
+                                onClick={() => setShowStockAlertsModal(false)}
+                            >
+                                ×
+                            </button>
+                            <StockAlertsPanel alerts={lowStockAlerts} />
+                        </div>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

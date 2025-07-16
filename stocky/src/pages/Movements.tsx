@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { fetchMovements, fetchRecentMovements, createMovement, fetchCategories, fetchMovementsTotal } from '../services/api'
 import DashboardLayout from '../components/DashboardLayout '
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
@@ -9,119 +10,100 @@ import ViewToggle from '../components/ViewToggle'
 import type { Movement, QuickMovementData } from '../types/movement'
 import { calculateMovementStats, filterMovements } from '../utils/movementUtils'
 
-const mockMovements: Movement[] = [
-    {
-        id: '1',
-        productName: 'Yerba',
-        category: 'Bebidas',
-        type: 'entrada',
-        quantity: 50,
-        previousStock: 20,
-        newStock: 70,
-        reason: 'Compra proveedor',
-        date: '2024-01-15T10:30:00',
-        user: 'Mariano',
-        cost: 275.00,
-        notes: 'Lote #2024-001'
-    },
-    {
-        id: '2',
-        productName: 'Café',
-        category: 'Bebidas',
-        type: 'salida',
-        quantity: 5,
-        previousStock: 15,
-        newStock: 10,
-        reason: 'Venta',
-        date: '2024-01-15T14:20:00',
-        user: 'Ana',
-        notes: 'Cliente: Restaurante Central'
-    },
-    {
-        id: '3',
-        productName: 'Fideos',
-        category: 'Alimentos',
-        type: 'entrada',
-        quantity: 100,
-        previousStock: 30,
-        newStock: 130,
-        reason: 'Compra proveedor',
-        date: '2024-01-14T09:15:00',
-        user: 'Mariano',
-        cost: 200.00,
-        notes: 'Promoción especial'
-    },
-    {
-        id: '4',
-        productName: 'Detergente',
-        category: 'Limpieza',
-        type: 'salida',
-        quantity: 8,
-        previousStock: 25,
-        newStock: 17,
-        reason: 'Uso interno',
-        date: '2024-01-14T16:45:00',
-        user: 'Carlos',
-        notes: 'Limpieza oficina'
-    },
-    {
-        id: '5',
-        productName: 'Yerba',
-        category: 'Bebidas',
-        type: 'salida',
-        quantity: 10,
-        previousStock: 70,
-        newStock: 60,
-        reason: 'Venta',
-        date: '2024-01-13T11:30:00',
-        user: 'Ana',
-        notes: 'Cliente: Cafetería Express'
-    },
-    {
-        id: '6',
-        productName: 'Papel Higiénico',
-        category: 'Limpieza',
-        type: 'entrada',
-        quantity: 200,
-        previousStock: 50,
-        newStock: 250,
-        reason: 'Compra proveedor',
-        date: '2024-01-13T08:00:00',
-        user: 'Mariano',
-        cost: 400.00,
-        notes: 'Stock de seguridad'
-    }
-]
-
 const Movements = () => {
-    const [movements] = useState<Movement[]>(mockMovements)
+    const [movements, setMovements] = useState<Movement[]>([])
+    const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterType, setFilterType] = useState<'todos' | 'entrada' | 'salida'>('todos')
     const [filterCategory, setFilterCategory] = useState('todos')
     const [filterDate, setFilterDate] = useState('')
     const [showQuickMovement, setShowQuickMovement] = useState(false)
     const [viewMode, setViewMode] = useState<'recent' | 'all'>('recent')
+    const [error, setError] = useState<string | null>(null)
+    const [categories, setCategories] = useState<{ _id: string, name: string }[]>([])
 
-    // Obtener categorías únicas
-    const categories = useMemo(() => {
-        const uniqueCategories = [...new Set(movements.map(m => m.category))]
-        return uniqueCategories
-    }, [movements])
+    const loadMovements = async (mode: 'recent' | 'all' = viewMode) => {
+        setLoading(true)
+        setError(null)
+        try {
+            let data
+            if (mode === 'recent') {
+                data = await fetchRecentMovements()
+            } else {
+                data = await fetchMovements()
+            }
+            setMovements(data.movements || data)
+        } catch (err: any) {
+            setError('Error al cargar movimientos')
+            setMovements([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const loadCategories = async () => {
+        try {
+            const data = await fetchCategories()
+            setCategories(data.categories || data)
+        } catch {}
+    }
+
+    useEffect(() => {
+        loadMovements(viewMode)
+        loadCategories()
+    }, [viewMode])
 
     // Filtrar movimientos usando utilidades
     const filteredMovements = useMemo(() => {
-        return filterMovements(movements, searchTerm, filterType, filterCategory, filterDate, viewMode)
-    }, [movements, searchTerm, filterType, filterCategory, filterDate, viewMode])
+        return filterMovements(movements, searchTerm, filterType, filterCategory, filterDate, 'all')
+    }, [movements, searchTerm, filterType, filterCategory, filterDate])
 
     // Calcular estadísticas usando utilidades
     const stats = useMemo(() => {
         return calculateMovementStats(movements)
     }, [movements])
 
-    const handleQuickMovementSubmit = (data: QuickMovementData) => {
-        // Aquí se procesaría la creación del movimiento
-        console.log('Nuevo movimiento:', data)
-        // En una implementación real, se agregaría el movimiento a la lista
+    // Crear un map de id a nombre para categorías
+    const categoryNameMap = useMemo(() => {
+        const map: Record<string, string> = {}
+        categories.forEach(cat => { map[cat._id] = cat.name })
+        return map
+    }, [categories])
+
+    // Obtener nombres únicos de categorías presentes en movimientos
+    const movementCategoryNames = useMemo(() => {
+        const names = new Set<string>()
+        movements.forEach(m => {
+            const found = categories.find(cat => cat._id === m.category)
+            if (found) {
+                names.add(found.name)
+            } else {
+                names.add(m.category)
+            }
+        })
+        return Array.from(names)
+    }, [movements, categories])
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64">Cargando movimientos...</div>
+    }
+
+    if (error) {
+        return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
+    }
+
+    const handleQuickMovementSubmit = async (data: QuickMovementData) => {
+        setLoading(true)
+        setError(null)
+        try {
+            await createMovement(data)
+            await loadMovements(viewMode)
+            setShowQuickMovement(false)
+        } catch (err: any) {
+            setError('Error al crear movimiento')
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -201,11 +183,11 @@ const Movements = () => {
                     onFilterCategoryChange={setFilterCategory}
                     filterDate={filterDate}
                     onFilterDateChange={setFilterDate}
-                    categories={categories}
+                    categories={categories.map(cat => cat.name)}
                 />
 
                 {/* Tabla de movimientos */}
-                <MovementsTable movements={filteredMovements} />
+                <MovementsTable movements={filteredMovements} categoryNameMap={categoryNameMap} />
 
                 {/* Estado vacío */}
                 {filteredMovements.length === 0 && (

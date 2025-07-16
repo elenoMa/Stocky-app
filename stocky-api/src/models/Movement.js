@@ -62,7 +62,7 @@ const movementSchema = new mongoose.Schema({
 
 // Virtual para date
 movementSchema.virtual('date').get(function() {
-  return this.createdAt.toISOString();
+  return (this.createdAt instanceof Date) ? this.createdAt.toISOString() : null;
 });
 
 // Índices para mejorar el rendimiento

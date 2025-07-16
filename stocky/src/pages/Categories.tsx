@@ -1,61 +1,93 @@
-import { useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import DashboardLayout from '../components/DashboardLayout '
 import StatsCard from '../components/StatsCard'
 import SearchBar from '../components/SearchBar'
 import EmptyState from '../components/EmptyState'
 import CategoryFormModal from '../components/CategoryFormModal'
+import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../services/api'
 
 interface Category {
-    id: string
+    _id: string
     name: string
-    description: string
-    productCount: number
-    color: string
+    description?: string
+    color?: string
+    isActive?: boolean
+    createdAt?: string
+    updatedAt?: string
 }
 
-const mockCategories: Category[] = [
-    { id: '1', name: 'Bebidas', description: 'Productos líquidos para consumo', productCount: 5, color: 'bg-blue-100' },
-    { id: '2', name: 'Alimentos', description: 'Productos alimenticios básicos', productCount: 12, color: 'bg-green-100' },
-    { id: '3', name: 'Limpieza', description: 'Productos de limpieza y aseo', productCount: 8, color: 'bg-yellow-100' },
-    { id: '4', name: 'Electrónicos', description: 'Dispositivos y accesorios electrónicos', productCount: 3, color: 'bg-purple-100' },
-]
-
 const Categories = () => {
-    const [categories, setCategories] = useState<Category[]>(mockCategories)
+    const [categories, setCategories] = useState<Category[]>([])
+    const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [editingCategory, setEditingCategory] = useState<Category | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+    const [error, setError] = useState<string | null>(null)
 
-    const filteredCategories = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        category.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-
-    const handleDelete = (id: string) => {
-        if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
-            setCategories(categories.filter(cat => cat.id !== id))
+    const loadCategories = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const data = await fetchCategories()
+            setCategories(data.categories || data)
+        } catch (err: any) {
+            setError('Error al cargar categorías')
+            setCategories([])
+        } finally {
+            setLoading(false)
         }
     }
 
-    const handleSubmitCategory = (data: { name: string; description: string; color: string }) => {
-        if (editingCategory) {
-            // Actualizar categoría existente
-            setCategories(categories.map(cat => 
-                cat.id === editingCategory.id 
-                    ? { ...cat, ...data }
-                    : cat
-            ))
-        } else {
-            // Crear nueva categoría
-            const newCategory: Category = {
-                id: Date.now().toString(),
-                ...data,
-                productCount: 0
+    useEffect(() => {
+        loadCategories()
+    }, [])
+
+    const filteredCategories = categories.filter(category =>
+        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        category.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        category.color?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    const handleDelete = async (id: string) => {
+        if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
+            setLoading(true)
+            setError(null)
+            try {
+                await deleteCategory(id)
+                await loadCategories()
+            } catch (err: any) {
+                setError('Error al eliminar categoría')
+            } finally {
+                setLoading(false)
             }
-            setCategories([...categories, newCategory])
         }
-        setEditingCategory(null)
+    }
+
+    const handleSubmitCategory = async (data: { name: string; description: string; color: string }) => {
+        setLoading(true)
+        setError(null)
+        try {
+            if (editingCategory) {
+                await updateCategory(editingCategory._id, data)
+            } else {
+                await createCategory(data)
+            }
+            await loadCategories()
+            setShowModal(false)
+            setEditingCategory(null)
+        } catch (err: any) {
+            setError('Error al guardar categoría')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64">Cargando categorías...</div>
+    }
+    if (error) {
+        return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
     }
 
     return (
@@ -85,19 +117,19 @@ const Categories = () => {
                     <StatsCard
                         icon="📦"
                         title="Total Productos"
-                        value={categories.reduce((sum, cat) => sum + cat.productCount, 0)}
+                        value={categories.reduce((sum, cat) => sum + (cat.isActive ? 1 : 0), 0)}
                         color="green"
                     />
                     <StatsCard
                         icon="📊"
                         title="Promedio"
-                        value={Math.round(categories.reduce((sum, cat) => sum + cat.productCount, 0) / categories.length)}
+                        value={Math.round(categories.reduce((sum, cat) => sum + (cat.isActive ? 1 : 0), 0) / categories.length)}
                         color="yellow"
                     />
                     <StatsCard
                         icon="🔥"
                         title="Más Productos"
-                        value={categories.reduce((max, cat) => cat.productCount > max ? cat.productCount : max, 0)}
+                        value={categories.reduce((max, cat) => cat.isActive ? 1 : 0 > max ? 1 : max, 0)}
                         color="purple"
                     />
                 </div>
@@ -131,17 +163,17 @@ const Categories = () => {
                 {viewMode === 'cards' && filteredCategories.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
                         {filteredCategories.map(category => (
-                            <div key={category.id} className="bg-white rounded-lg shadow border p-6 flex flex-col justify-between">
+                            <div key={category._id} className="bg-white rounded-lg shadow border p-6 flex flex-col justify-between">
                                 <div className="flex items-center mb-3">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xl font-bold mr-3 ${category.color}`}>📁</div>
                                     <div>
                                         <div className="text-lg font-semibold text-gray-900">{category.name}</div>
-                                        <div className="text-xs text-gray-500">{category.description}</div>
+                                        {category.description && <div className="text-xs text-gray-500">{category.description}</div>}
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between mt-4">
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {category.productCount} productos
+                                        {category.isActive ? 'Activo' : 'Inactivo'}
                                     </span>
                                     <div className="flex gap-2">
                                         <button
@@ -154,7 +186,7 @@ const Categories = () => {
                                             ✏️ Editar
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(category.id)}
+                                            onClick={() => handleDelete(category._id)}
                                             className="text-red-600 hover:text-red-900 text-sm"
                                         >
                                             🗑️ Eliminar
@@ -179,7 +211,7 @@ const Categories = () => {
                                         Descripción
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Productos
+                                        Estado
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Acciones
@@ -188,7 +220,7 @@ const Categories = () => {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredCategories.map((category) => (
-                                    <tr key={category.id} className="hover:bg-gray-50">
+                                    <tr key={category._id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className={`w-4 h-4 rounded-full ${category.color} mr-3`}></div>
@@ -200,7 +232,7 @@ const Categories = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                {category.productCount} productos
+                                                {category.isActive ? 'Activo' : 'Inactivo'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -214,7 +246,7 @@ const Categories = () => {
                                                 ✏️ Editar
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(category.id)}
+                                                onClick={() => handleDelete(category._id)}
                                                 className="text-red-600 hover:text-red-900"
                                             >
                                                 🗑️ Eliminar
@@ -246,7 +278,17 @@ const Categories = () => {
                     setShowModal(false)
                     setEditingCategory(null)
                 }}
-                category={editingCategory}
+                category={
+                    editingCategory
+                        ? {
+                            id: editingCategory._id,
+                            name: editingCategory.name,
+                            description: editingCategory.description ?? '',
+                            productCount: 0, // valor por defecto
+                            color: editingCategory.color ?? ''
+                        }
+                        : null
+                }
                 onSubmit={handleSubmitCategory}
             />
         </DashboardLayout>

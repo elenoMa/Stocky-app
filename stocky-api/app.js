@@ -3,11 +3,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './src/config/database.js';
+import { authMiddleware } from './src/middlewares/authMiddleware.js';
 
 // Importar rutas
 import productRoutes from './src/routes/products.js';
 import movementRoutes from './src/routes/movements.js';
 import categoryRoutes from './src/routes/categories.js';
+import authRoutes from './src/routes/auth.js';
 
 dotenv.config();
 
@@ -28,9 +30,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rutas de la API
-app.use('/api/products', productRoutes);
-app.use('/api/movements', movementRoutes);
-app.use('/api/categories', categoryRoutes);
+app.use('/api/products', authMiddleware, productRoutes);
+app.use('/api/movements', authMiddleware, movementRoutes);
+app.use('/api/categories', authMiddleware, categoryRoutes);
+app.use('/api/auth', authRoutes);
 
 // Middleware de manejo de errores
 app.use((err, req, res, next) => {

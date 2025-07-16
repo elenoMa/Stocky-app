@@ -4,36 +4,17 @@ interface StockAlert {
     minStock: number;
 }
 
-const alertProducts: StockAlert[] = [
-    {
-        name: "Producto 1",
-        stock: 10,
-        minStock: 10,
-    },
-    {
-        name: "Producto 2",
-        stock: 5,
-        minStock: 10,
-    },
-    {
-        name: "Producto 3",
-        stock: 5,
-        minStock: 10,
-    },
-    {
-        name: "Producto 4",
-        stock: 11,
-        minStock: 10,
-    },
+interface StockAlertsPanelProps {
+    alerts: StockAlert[];
+}
 
-]
-
-const StockAlertsPanel = () => {
+const StockAlertsPanel = ({ alerts }: StockAlertsPanelProps) => {
     return (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div>
             <h2 className="text-xl font-bold mb-4">Alertas de Stock</h2>
             <ul className="space-y-2">
-                {alertProducts.map((p) => (
+                {alerts.length === 0 && <li className="text-gray-500">No hay productos en bajo stock.</li>}
+                {alerts.map((p) => (
                     <li
                         key={p.name}
                         className={`flex items-center justify-between p-2 rounded-md border border-gray-200 
@@ -44,7 +25,7 @@ const StockAlertsPanel = () => {
                     </li>
                 ))}
             </ul>
-        </div >
+        </div>
     )
 }
 

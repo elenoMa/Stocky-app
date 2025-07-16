@@ -21,9 +21,10 @@ interface ProductsTableProps {
     products: Product[]
     onEdit: (product: Product) => void
     onDelete: (id: string) => void
+    categoryNameMap?: Record<string, string>
 }
 
-const ProductsTable = ({ products, onEdit, onDelete }: ProductsTableProps) => {
+const ProductsTable = ({ products, onEdit, onDelete, categoryNameMap }: ProductsTableProps) => {
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
         return date.toLocaleDateString('es-ES', {
@@ -68,58 +69,61 @@ const ProductsTable = ({ products, onEdit, onDelete }: ProductsTableProps) => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {products.map((product) => (
-                            <tr key={product.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4">
-                                    <div>
-                                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                                        <div className="text-sm text-gray-500">SKU: {product.sku}</div>
-                                        {product.description && (
-                                            <div className="text-xs text-gray-400 mt-1">{product.description}</div>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{product.category}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">
-                                        {product.stock} / {product.maxStock}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                        Mín: {product.minStock}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">
-                                        ${product.price.toFixed(2)}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <ProductStatusBadge status={product.status} />
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{product.supplier}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{formatDate(product.lastUpdated)}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button
-                                        onClick={() => onEdit(product)}
-                                        className="text-blue-600 hover:text-blue-900 mr-4"
-                                    >
-                                        ✏️ Editar
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(product.id)}
-                                        className="text-red-600 hover:text-red-900"
-                                    >
-                                        🗑️ Eliminar
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                        {products.map((product) => {
+                            const categoryName = categoryNameMap?.[product.category] || product.category;
+                            return (
+                                <tr key={product.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                            <div className="text-sm text-gray-500">SKU: {product.sku}</div>
+                                            {product.description && (
+                                                <div className="text-xs text-gray-400 mt-1">{product.description}</div>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">{categoryName}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">
+                                            {product.stock} / {product.maxStock}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            Mín: {product.minStock}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">
+                                            ${product.price.toFixed(2)}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <ProductStatusBadge status={product.status} />
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">{product.supplier}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">{formatDate(product.lastUpdated)}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button
+                                            onClick={() => onEdit(product)}
+                                            className="text-blue-600 hover:text-blue-900 mr-4"
+                                        >
+                                            ✏️ Editar
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete(product.id)}
+                                            className="text-red-600 hover:text-red-900"
+                                        >
+                                            🗑️ Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            )
+                        })}
                     </tbody>
                 </table>
             </div>
