@@ -29,8 +29,8 @@ const CategoryFormModal = ({ show, onClose, category, onSubmit }: CategoryFormMo
     }
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative animate-modal-in">
                 <h2 className="text-xl font-bold mb-4">
                     {category ? '✏️ Editar Categoría' : '➕ Nueva Categoría'}
                 </h2>
@@ -95,6 +95,15 @@ const CategoryFormModal = ({ show, onClose, category, onSubmit }: CategoryFormMo
                     </div>
                 </form>
             </div>
+            <style>{`
+                @keyframes modal-in {
+                    0% { opacity: 0; transform: scale(0.95); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-in {
+                    animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                }
+            `}</style>
         </div>
     )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories } from '../services/api'
-import DashboardLayout from '../components/DashboardLayout '
+import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchSuppliers } from '../services/api'
+import DashboardLayout from '../components/DashboardLayout'
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
 import ProductFormModal from '../components/ProductFormModal'
@@ -9,6 +9,8 @@ import ProductsTable from '../components/ProductsTable'
 import ViewToggle from '../components/ViewToggle'
 import type { Product, ProductFormData } from '../types/product'
 import { calculateProductStats, filterAndSortProducts } from '../utils/productUtils'
+import PageTransition from '../components/PageTransition'
+import Loader from '../components/Loader'
 
 const Products = () => {
     const [products, setProducts] = useState<Product[]>([])
@@ -23,6 +25,7 @@ const Products = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
     const [error, setError] = useState<string | null>(null)
     const [categories, setCategories] = useState<{ _id: string, name: string }[]>([])
+    const [suppliers, setSuppliers] = useState<any[]>([])
 
     const loadProducts = async () => {
         setLoading(true)
@@ -45,9 +48,17 @@ const Products = () => {
         } catch {}
     }
 
+    const loadSuppliers = async () => {
+        try {
+            const data = await fetchSuppliers()
+            setSuppliers(data.suppliers || data)
+        } catch {}
+    }
+
     useEffect(() => {
         loadProducts()
         loadCategories()
+        loadSuppliers()
     }, [])
 
     // Obtener nombres únicos de categorías presentes en productos
@@ -122,21 +133,17 @@ const Products = () => {
     }
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Cargando productos...</div>
+        return <PageTransition variant="slideLeft"><Loader message="Cargando productos..." /></PageTransition>
     }
     if (error) {
         return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>
     }
 
     return (
-        <DashboardLayout>
+        <PageTransition variant="slideLeft">
             <div>
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800">📦 Productos</h1>
-                        <p className="text-gray-600 mt-1">Gestiona tu catálogo de productos</p>
-                    </div>
                     <div className="flex gap-3">
                         <ViewToggle
                             currentView={viewMode}
@@ -230,7 +237,7 @@ const Products = () => {
                                             <span className="text-xs text-gray-500">SKU: {product.sku}</span>
                                         </div>
                                         <div className="text-sm text-gray-600 mb-1">Categoría: {categoryName}</div>
-                                        <div className="text-sm text-gray-600 mb-1">Proveedor: {product.supplier}</div>
+                                        <div className="text-sm text-gray-600 mb-1">Proveedor: {product.supplier && typeof product.supplier === 'object' && product.supplier.name ? product.supplier.name : '—'}</div>
                                         <div className="text-sm text-gray-600 mb-1">Stock: <span className="font-semibold">{product.stock}</span> / {product.maxStock} (Mín: {product.minStock})</div>
                                         <div className="text-sm text-gray-600 mb-1">Precio: <span className="font-semibold">${product.price.toFixed(2)}</span></div>
                                         <div className="text-sm text-gray-600 mb-1">Estado: <span className="capitalize">{product.status}</span></div>
@@ -278,11 +285,22 @@ const Products = () => {
                         setShowModal(false)
                         setEditingProduct(null)
                     }}
-                    product={editingProduct}
+                    product={
+                        editingProduct
+                            ? {
+                                ...editingProduct,
+                                supplier:
+                                    typeof editingProduct.supplier === "object"
+                                        ? editingProduct.supplier?.name || ""
+                                        : editingProduct.supplier || ""
+                            }
+                            : null
+                    }
                     onSubmit={handleSubmitProduct}
+                    suppliers={suppliers}
                 />
             </div>
-        </DashboardLayout>
+        </PageTransition>
     )
 }
 

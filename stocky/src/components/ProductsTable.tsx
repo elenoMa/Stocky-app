@@ -10,7 +10,7 @@ interface Product {
     price: number
     minStock: number
     maxStock: number
-    supplier: string
+    supplier: string | { _id: string, name: string, active?: boolean } | null
     sku: string
     description?: string
     lastUpdated: string
@@ -102,7 +102,13 @@ const ProductsTable = ({ products, onEdit, onDelete, categoryNameMap }: Products
                                         <ProductStatusBadge status={product.status} />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">{product.supplier}</div>
+                                        <div className="text-sm text-gray-900">
+                                            {product.supplier && typeof product.supplier === 'object' && 'name' in product.supplier
+                                                ? product.supplier.name
+                                                : product.supplier && typeof product.supplier === 'string' && product.supplier.trim() !== ''
+                                                  ? product.supplier
+                                                  : '—'}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-gray-900">{formatDate(product.lastUpdated)}</div>

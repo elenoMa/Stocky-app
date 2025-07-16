@@ -3,13 +3,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './src/config/database.js';
-import { authMiddleware } from './src/middlewares/authMiddleware.js';
+import auth from './src/middlewares/authMiddleware.js';
+import cookieParser from 'cookie-parser';
 
 // Importar rutas
 import productRoutes from './src/routes/products.js';
 import movementRoutes from './src/routes/movements.js';
 import categoryRoutes from './src/routes/categories.js';
 import authRoutes from './src/routes/auth.js';
+import usersRoutes from './src/routes/users.js';
+import suppliersRouter from './src/routes/suppliers.js';
+import tasksRoutes from './src/routes/tasks.js';
 
 dotenv.config();
 
@@ -18,6 +22,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 3000;
 
@@ -30,10 +35,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rutas de la API
-app.use('/api/products', authMiddleware, productRoutes);
-app.use('/api/movements', authMiddleware, movementRoutes);
-app.use('/api/categories', authMiddleware, categoryRoutes);
+app.use('/api/products', auth, productRoutes);
+app.use('/api/movements', auth, movementRoutes);
+app.use('/api/categories', auth, categoryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/suppliers', suppliersRouter);
+app.use('/api/tasks', tasksRoutes);
 
 // Middleware de manejo de errores
 app.use((err, req, res, next) => {

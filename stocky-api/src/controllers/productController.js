@@ -1,4 +1,5 @@
 import Product from '../models/Product.js';
+import Supplier from '../models/Supplier.js';
 
 // Obtener todos los productos
 export const getProducts = async (req, res) => {
@@ -26,7 +27,8 @@ export const getProducts = async (req, res) => {
     const products = await Product.find(filters)
       .sort(sort)
       .limit(parseInt(limit))
-      .skip(skip);
+      .skip(skip)
+      .populate('supplier');
 
     const total = await Product.countDocuments(filters);
 
@@ -47,7 +49,7 @@ export const getProducts = async (req, res) => {
 // Obtener un producto por ID
 export const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).populate('supplier');
     if (!product) {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }
@@ -60,8 +62,16 @@ export const getProductById = async (req, res) => {
 // Crear un nuevo producto
 export const createProduct = async (req, res) => {
   try {
+    // Validar supplier si se envía
+    if (req.body.supplier) {
+      const exists = await Supplier.findById(req.body.supplier);
+      if (!exists) {
+        return res.status(400).json({ message: 'Proveedor no válido' });
+      }
+    }
     const product = new Product(req.body);
     await product.save();
+    await product.populate('supplier');
     res.status(201).json(product);
   } catch (error) {
     if (error.code === 11000) {
@@ -74,11 +84,18 @@ export const createProduct = async (req, res) => {
 // Actualizar un producto
 export const updateProduct = async (req, res) => {
   try {
+    // Validar supplier si se envía
+    if (req.body.supplier) {
+      const exists = await Supplier.findById(req.body.supplier);
+      if (!exists) {
+        return res.status(400).json({ message: 'Proveedor no válido' });
+      }
+    }
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    );
+    ).populate('supplier');
     if (!product) {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }

@@ -224,4 +224,29 @@ export const getMovementsByProduct = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener movimientos del producto', error: error.message });
   }
+};
+
+// Obtener productos más vendidos
+export const getTopSellingProducts = async (req, res) => {
+  try {
+    const { limit = 5 } = req.query;
+    console.log('[getTopSellingProducts] limit:', limit);
+    const topProducts = await Movement.aggregate([
+      { $match: { type: 'salida' } },
+      { $group: {
+          _id: '$productId',
+          productName: { $first: '$productName' },
+          category: { $first: '$category' },
+          totalSales: { $sum: '$quantity' }
+        }
+      },
+      { $sort: { totalSales: -1 } },
+      { $limit: parseInt(limit) },
+    ]);
+    console.log('[getTopSellingProducts] topProducts:', topProducts);
+    res.json(topProducts);
+  } catch (error) {
+    console.error('[getTopSellingProducts] ERROR:', error);
+    res.status(500).json({ message: 'Error al obtener productos más vendidos', error: error.message, stack: error.stack });
+  }
 }; 

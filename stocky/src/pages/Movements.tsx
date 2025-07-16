@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { fetchMovements, fetchRecentMovements, createMovement, fetchCategories, fetchMovementsTotal } from '../services/api'
-import DashboardLayout from '../components/DashboardLayout '
+import DashboardLayout from '../components/DashboardLayout'
 import StatsCard from '../components/StatsCard'
 import EmptyState from '../components/EmptyState'
 import FilterPanel from '../components/FilterPanel'
@@ -9,6 +9,8 @@ import QuickMovementModal from '../components/QuickMovementModal'
 import ViewToggle from '../components/ViewToggle'
 import type { Movement, QuickMovementData } from '../types/movement'
 import { calculateMovementStats, filterMovements } from '../utils/movementUtils'
+import PageTransition from '../components/PageTransition'
+import Loader from '../components/Loader'
 
 const Movements = () => {
     const [movements, setMovements] = useState<Movement[]>([])
@@ -85,7 +87,7 @@ const Movements = () => {
     }, [movements, categories])
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Cargando movimientos...</div>
+        return <PageTransition variant="slideLeft"><Loader message="Cargando movimientos..." /></PageTransition>
     }
 
     if (error) {
@@ -107,30 +109,26 @@ const Movements = () => {
     }
 
     return (
-        <DashboardLayout>
+        <PageTransition variant="slideLeft">
             <div>
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800">📦 Movimientos</h1>
-                        <p className="text-gray-600 mt-1">Gestiona y monitorea todos los movimientos de inventario</p>
+                    <div className="flex gap-3">
+                        <ViewToggle 
+                            currentView={viewMode} 
+                            onViewChange={(view) => setViewMode(view as 'recent' | 'all')} 
+                            options={[
+                                { value: 'recent', label: 'Recientes', icon: '🕒' },
+                                { value: 'all', label: 'Todos', icon: '📋' }
+                            ]}
+                        />
+                        <button
+                            onClick={() => setShowQuickMovement(true)}
+                            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                        >
+                            ➕ Movimiento Rápido
+                        </button>
                     </div>
-                                    <div className="flex gap-3">
-                    <ViewToggle 
-                        currentView={viewMode} 
-                        onViewChange={(view) => setViewMode(view as 'recent' | 'all')} 
-                        options={[
-                            { value: 'recent', label: 'Recientes', icon: '🕒' },
-                            { value: 'all', label: 'Todos', icon: '📋' }
-                        ]}
-                    />
-                    <button
-                        onClick={() => setShowQuickMovement(true)}
-                        className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-                    >
-                        ➕ Movimiento Rápido
-                    </button>
-                </div>
                 </div>
 
                 {/* Estadísticas */}
@@ -208,7 +206,7 @@ const Movements = () => {
                     onSubmit={handleQuickMovementSubmit}
                 />
             </div>
-        </DashboardLayout>
+        </PageTransition>
     )
 }
 

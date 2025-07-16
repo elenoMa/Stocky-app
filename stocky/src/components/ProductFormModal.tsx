@@ -17,11 +17,18 @@ interface Product {
     status: 'active' | 'inactive' | 'low-stock'
 }
 
+interface Supplier {
+    _id: string;
+    name: string;
+    active: boolean;
+}
+
 interface ProductFormModalProps {
     show: boolean;
     onClose: () => void;
     product?: Product | null;
     onSubmit: (data: ProductFormData) => void | Promise<void>;
+    suppliers: Supplier[];
 }
 
 interface FormData {
@@ -36,7 +43,7 @@ interface FormData {
     description: string;
 }
 
-const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModalProps) => {
+const ProductFormModal = ({ show, onClose, product, onSubmit, suppliers }: ProductFormModalProps) => {
     const { register, handleSubmit, reset, setValue } = useForm<FormData>();
 
     // Pre-llenar formulario si estamos editando
@@ -65,8 +72,8 @@ const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModal
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative animate-modal-in">
                 <h2 className="text-xl font-bold mb-4">
                     {product ? '✏️ Editar Producto' : '➕ Nuevo Producto'}
                 </h2>
@@ -153,11 +160,15 @@ const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModal
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Proveedor
                         </label>
-                        <input
-                            {...register('supplier', { required: 'El proveedor es requerido' })}
-                            placeholder="Ej: Proveedor A"
+                        <select
+                            {...register('supplier')}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                        >
+                            <option value="">Sin proveedor</option>
+                            {suppliers.filter(s => s.active).map(s => (
+                                <option key={s._id} value={s._id}>{s.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
@@ -200,6 +211,15 @@ const ProductFormModal = ({ show, onClose, product, onSubmit }: ProductFormModal
                     </div>
                 </form>
             </div>
+            <style>{`
+                @keyframes modal-in {
+                    0% { opacity: 0; transform: scale(0.95); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-in {
+                    animation: modal-in 0.25s cubic-bezier(.4,1.7,.7,1.1);
+                }
+            `}</style>
         </div>
     )
 }

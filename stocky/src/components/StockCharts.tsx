@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Legend, CartesianGrid, Label, Sector } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Legend, CartesianGrid, Label, Sector, BarChart, Bar, Tooltip as RechartsTooltip, LabelList } from 'recharts'
 import { useMemo, useState } from 'react'
 import type { Movement } from '../types/movement'
 import type { Product } from '../types/product'
@@ -11,6 +11,7 @@ interface StockChartsProps {
     products: Product[]
     categories: Category[]
     movements?: Movement[]
+    suppliers?: any[]
 }
 
 function getPercent(value: number, total: number) {
@@ -18,7 +19,7 @@ function getPercent(value: number, total: number) {
     return `${((value / total) * 100).toFixed(1)}%`;
 }
 
-export default function StockCharts({ products = [], categories = [], movements = [] }: StockChartsProps) {
+export default function StockCharts({ products = [], categories = [], movements = [], suppliers = [] }: StockChartsProps) {
     // Estado del filtro
     const [filterStatus, setFilterStatus] = useState<'todos' | 'active' | 'inactive' | 'low-stock'>('todos');
 
@@ -165,6 +166,27 @@ export default function StockCharts({ products = [], categories = [], movements 
         );
     }
 
+    // --- Gráfico de productos por proveedor ---
+    const supplierProductData = useMemo(() => {
+        if (!suppliers || !Array.isArray(suppliers)) return [];
+        const map: Record<string, { name: string; count: number }> = {};
+        for (const s of suppliers.filter((s: any) => s.active)) {
+            map[s._id] = { name: s.name, count: 0 };
+        }
+        for (const p of products) {
+            // Caso 1: supplier es objeto con _id
+            if (p.supplier && typeof p.supplier === 'object' && p.supplier._id && map[p.supplier._id]) {
+                map[p.supplier._id].count += 1;
+            }
+            // Caso 2: supplier es string y coincide con el nombre
+            else if (typeof p.supplier === 'string') {
+                const found = Object.values(map).find(m => m.name === p.supplier);
+                if (found) found.count += 1;
+            }
+        }
+        return Object.values(map).sort((a, b) => b.count - a.count);
+    }, [products, suppliers]);
+
     return (
         <div className="bg-white p-4 rounded shadow mb-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 gap-2">
@@ -219,6 +241,27 @@ export default function StockCharts({ products = [], categories = [], movements 
                                 <Line key={cat} type="monotone" dataKey={cat} stroke={COLORS[idx % COLORS.length]} dot={false} />
                             ))}
                         </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+            {/* Gráfico de barras de productos por proveedor */}
+            {supplierProductData.length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-md font-semibold mb-2">🏭 Productos por Proveedor</h3>
+                    <ResponsiveContainer width="100%" height={Math.max(220, supplierProductData.length * 36)}>
+                        <BarChart
+                            data={supplierProductData}
+                            layout="vertical"
+                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} domain={[0, 'dataMax']} />
+                            <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 13 }} />
+                            <RechartsTooltip formatter={(value: any) => `${value} producto${value === 1 ? '' : 's'}`} />
+                            <Bar dataKey="count" fill="#3B82F6" radius={[0, 8, 8, 0]}>
+                                <LabelList dataKey="count" position="right" />
+                            </Bar>
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             )}

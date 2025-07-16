@@ -7,18 +7,22 @@ interface FormData {
     type: 'entrada' | 'salida';
 }
 
-const QuickStockOutForm = () => {
+interface QuickStockOutFormProps {
+    onSubmit: (data: { code: string; quantity: number; type: 'entrada' | 'salida' }) => void | Promise<void>;
+}
+
+const QuickStockOutForm = ({ onSubmit }: QuickStockOutFormProps) => {
     const { register, handleSubmit, reset } = useForm<FormData>();
     const [type, setType] = useState<'entrada' | 'salida'>('salida');
-    const onSubmit = (data: Omit<FormData, 'type'>) => {
+    const handleFormSubmit = async (data: Omit<FormData, 'type'>) => {
         const payload = { ...data, type };
-        console.log(payload);
+        await onSubmit(payload);
         reset();
     }
     return (
         <div className="bg-white p-4 rounded-lg shadow-md mb-6">
             <h2 className="text-xl font-bold mb-4">Movimiento Rápido de Stock</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+            <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-2">
                 <div className="flex gap-2 mb-2">
                     <button
                         type="button"

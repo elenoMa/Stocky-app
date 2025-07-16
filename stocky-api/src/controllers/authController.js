@@ -39,10 +39,40 @@ async function login(req, res) {
       return res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
     }
     const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
+    // Generar refresh token (7 días)
+    const refreshToken = jwt.sign({ id: user._id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    // Enviar refresh token como cookie httpOnly
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+    });
     res.json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
   } catch (err) {
     res.status(500).json({ message: 'Error en el login.', error: err.message });
   }
 }
 
-export default { register, login }; 
+// POST /api/auth/refresh
+async function refreshToken(req, res) {
+  try {
+    const { refreshToken } = req.cookies;
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Refresh token requerido' });
+    }
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Refresh token inválido o expirado' });
+    }
+    // Generar nuevo access token
+    const newToken = jwt.sign({ id: payload.id, username: payload.username, role: payload.role }, JWT_SECRET, { expiresIn: '2h' });
+    res.json({ token: newToken });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al refrescar token', error: err.message });
+  }
+}
+
+export default { register, login, refreshToken }; 
